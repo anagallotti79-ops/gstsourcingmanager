@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ShoppingCart, Clock, Loader2 } from "lucide-react";
+import { Search, ShoppingCart, Clock, Loader2, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 const statusPOBadge = (status: string) => {
   const cls =
     status === "Com PO" ? "bg-success text-success-foreground" :
@@ -44,9 +45,15 @@ export default function PartNumbersPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Part Numbers</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gestão de componentes, pedidos e previsões</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Part Numbers</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestão de componentes, pedidos e previsões</p>
+        </div>
+        <Button className="gap-2">
+          <Plus size={16} />
+          Novo Part Number
+        </Button>
       </div>
 
       {/* Progress */}

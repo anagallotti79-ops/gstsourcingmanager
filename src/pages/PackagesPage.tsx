@@ -4,10 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { formatDate, calculateWeeks, calculatePredictionWeeks, getDateStatus } from "@/lib/dateUtils";
 import type { DateField } from "@/data/types";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 function DateCell({ field }: { field: DateField }) {
   const status = getDateStatus(field);
@@ -54,9 +55,15 @@ export default function PackagesPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Pacotes</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gestão e acompanhamento de source packages</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Pacotes</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestão e acompanhamento de source packages</p>
+        </div>
+        <Button className="gap-2">
+          <Plus size={16} />
+          Novo Pacote
+        </Button>
       </div>
 
       {/* Progress */}
