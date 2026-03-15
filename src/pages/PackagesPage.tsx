@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search } from "lucide-react";
 import { formatDate, calculateWeeks, calculatePredictionWeeks, getDateStatus } from "@/lib/dateUtils";
 import type { DateField } from "@/data/types";
+import { Progress } from "@/components/ui/progress";
 
 function DateCell({ field }: { field: DateField }) {
   const status = getDateStatus(field);
@@ -46,12 +47,31 @@ export default function PackagesPage() {
     return <Badge className={`text-[10px] ${cls}`}>{status}</Badge>;
   };
 
+  const totalClosed = packages.filter((pkg) => pkg.status === "Closed").length;
+  const progressPercentage = packages.length > 0 
+    ? Math.round((totalClosed / packages.length) * 100) 
+    : 0;
+
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Pacotes</h1>
         <p className="text-sm text-muted-foreground mt-1">Gestão e acompanhamento de source packages</p>
       </div>
+
+      {/* Progress */}
+      <Card className="bg-card border-border">
+        <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium text-foreground">Progresso de Fechamento de Pacotes</h3>
+            <span className="text-sm font-bold text-primary">{progressPercentage}%</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+          <p className="text-xs text-muted-foreground mt-2">
+            {totalClosed} de {packages.length} Pacotes Fechados.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">

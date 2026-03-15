@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, ShoppingCart, Clock, Loader2 } from "lucide-react";
-
+import { Progress } from "@/components/ui/progress";
 const statusPOBadge = (status: string) => {
   const cls =
     status === "Com PO" ? "bg-success text-success-foreground" :
@@ -38,12 +38,30 @@ export default function PartNumbersPage() {
   const totalPendente = partNumbers.filter((p) => p.statusPO === "Pendente").length;
   const totalInProcess = partNumbers.filter((p) => p.statusPO === "In Process").length;
 
+  const progressPercentage = partNumbers.length > 0 
+    ? Math.round((totalComPO / partNumbers.length) * 100) 
+    : 0;
+
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Part Numbers</h1>
         <p className="text-sm text-muted-foreground mt-1">Gestão de componentes, pedidos e previsões</p>
       </div>
+
+      {/* Progress */}
+      <Card className="bg-card border-border">
+        <CardContent className="p-4">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium text-foreground">Progresso de Emissão de POs</h3>
+            <span className="text-sm font-bold text-primary">{progressPercentage}%</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+          <p className="text-xs text-muted-foreground mt-2">
+            {totalComPO} de {partNumbers.length} Part Numbers Finalizados com PO.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
