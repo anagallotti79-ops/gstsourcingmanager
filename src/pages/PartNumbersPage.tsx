@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 const statusPOBadge = (status: string) => {
   const cls =
@@ -21,24 +24,88 @@ const statusPOBadge = (status: string) => {
   return <Badge className={`text-[10px] ${cls}`}>{status}</Badge>;
 };
 
-const emptyForm = {
-  projectId: "",
-  pn: "",
-  pnEra: "",
-  projeto: "",
-  description: "",
-  pb: "",
-  fornecedor: "",
-  modal: "Nacional" as Modal,
-  statusPO: "Pendente" as StatusPO,
-  po: "",
-  previsaoEmissaoPO: "",
-  rda: "",
-  statusRDA: "NA" as StatusRDA,
-  tpo: "",
-  statusTPO: "NA" as StatusTPO,
-  previsaoEmissaoTPO: "",
+const blankForm = {
+  projectId: "", pn: "", pnEra: "", projeto: "", description: "", pb: "", fornecedor: "",
+  modal: "Nacional" as Modal, statusPO: "Pendente" as StatusPO, po: "", previsaoEmissaoPO: "",
+  rda: "", statusRDA: "NA" as StatusRDA, tpo: "", statusTPO: "NA" as StatusTPO, previsaoEmissaoTPO: "",
 };
+
+type FormState = typeof blankForm;
+
+function PNForm({ form, setForm }: { form: FormState; setForm: React.Dispatch<React.SetStateAction<FormState>> }) {
+  const f = (key: keyof FormState, label: string, placeholder = "TBD") => (
+    <div key={key}>
+      <label className="text-sm font-medium text-foreground mb-1 block">{label}</label>
+      <Input placeholder={placeholder} value={form[key] as string}
+        onChange={(e) => setForm((s) => ({ ...s, [key]: e.target.value }))}
+        className="bg-card border-border" />
+    </div>
+  );
+  const sel = <K extends keyof FormState>(key: K, label: string, opts: string[]) => (
+    <div key={key}>
+      <label className="text-sm font-medium text-foreground mb-1 block">{label}</label>
+      <Select value={form[key] as string} onValueChange={(v) => setForm((s) => ({ ...s, [key]: v }))}>
+        <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
+        <SelectContent>{opts.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+      </Select>
+    </div>
+  );
+  return (
+    <div className="space-y-3 py-2">
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1 block">Projeto</label>
+        <Select value={form.projectId} onValueChange={(v) => {
+          const proj = projects.find((p) => p.id === v);
+          setForm((s) => ({ ...s, projectId: v, projeto: proj?.name || s.projeto }));
+        }}>
+          <SelectTrigger className="bg-card border-border"><SelectValue placeholder="Selecione o projeto" /></SelectTrigger>
+          <SelectContent>{projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      {f("pn", "PN *")}
+      {f("pnEra", "ERA")}
+      {f("description", "Descrição")}
+      {f("pb", "PB")}
+      {f("fornecedor", "Fornecedor")}
+      {sel("modal", "Modal", ["IRF", "Direct Buy", "Nacional"])}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">PO</p>
+      {sel("statusPO", "Status PO", ["Com PO", "Pendente", "In Process"])}
+      {f("po", "Número da PO")}
+      {f("previsaoEmissaoPO", "Previsão Emissão PO (AAAA-MM-DD)")}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">RDA</p>
+      {f("rda", "Número RDA")}
+      {sel("statusRDA", "Status RDA", ["Com PO", "Pendente", "In Process", "NA"])}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">TPO</p>
+      {f("tpo", "Número TPO")}
+      {sel("statusTPO", "Status TPO", ["Com PO", "Pendente", "In Process", "NA"])}
+      {f("previsaoEmissaoTPO", "Previsão Emissão TPO (AAAA-MM-DD)")}
+    </div>
+  );
+}
+
+function pnToForm(pn: PartNumber): FormState {
+  return {
+    projectId: pn.projectId, pn: pn.pn, pnEra: pn.pnEra, projeto: pn.projeto,
+    description: pn.description, pb: pn.pb, fornecedor: pn.fornecedor,
+    modal: pn.modal, statusPO: pn.statusPO, po: pn.po, previsaoEmissaoPO: pn.previsaoEmissaoPO,
+    rda: pn.rda, statusRDA: pn.statusRDA, tpo: pn.tpo, statusTPO: pn.statusTPO,
+    previsaoEmissaoTPO: pn.previsaoEmissaoTPO,
+  };
+}
+
+function formToPN(form: FormState, id: string): PartNumber {
+  const proj = projects.find((p) => p.id === form.projectId);
+  return {
+    id, projectId: form.projectId || "proj-1",
+    pn: form.pn || "TBD", pnEra: form.pnEra || "TBD",
+    projeto: form.projeto || proj?.name || "TBD",
+    description: form.description || "TBD", pb: form.pb || "TBD",
+    fornecedor: form.fornecedor || "TBD", modal: form.modal, statusPO: form.statusPO,
+    po: form.po, previsaoEmissaoPO: form.previsaoEmissaoPO || "TBD",
+    rda: form.rda, statusRDA: form.statusRDA, tpo: form.tpo,
+    statusTPO: form.statusTPO, previsaoEmissaoTPO: form.previsaoEmissaoTPO,
+  };
+}
 
 export default function PartNumbersPage() {
   const [pnList, setPnList] = useState<PartNumber[]>(initialPartNumbers);
@@ -46,8 +113,18 @@ export default function PartNumbersPage() {
   const [filterProject, setFilterProject] = useState("all");
   const [filterModal, setFilterModal] = useState("all");
   const [filterStatusPO, setFilterStatusPO] = useState("all");
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+
+  // Create
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<FormState>(blankForm);
+
+  // Edit
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<FormState>(blankForm);
+  const [editId, setEditId] = useState<string | null>(null);
+
+  // Delete
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return pnList.filter((pn) => {
@@ -65,47 +142,31 @@ export default function PartNumbersPage() {
   const totalComPO = pnList.filter((p) => p.statusPO === "Com PO").length;
   const totalPendente = pnList.filter((p) => p.statusPO === "Pendente").length;
   const totalInProcess = pnList.filter((p) => p.statusPO === "In Process").length;
+  const progressPercentage = pnList.length > 0 ? Math.round((totalComPO / pnList.length) * 100) : 0;
 
-  const progressPercentage = pnList.length > 0
-    ? Math.round((totalComPO / pnList.length) * 100)
-    : 0;
+  const handleCreate = () => {
+    setPnList((prev) => [...prev, formToPN(createForm, `pn-${Date.now()}`)]);
+    setCreateForm(blankForm);
+    setCreateOpen(false);
+  };
 
-  const field = (key: keyof typeof form, label: string, placeholder = "TBD") => (
-    <div>
-      <label className="text-sm font-medium text-foreground mb-1 block">{label}</label>
-      <Input
-        placeholder={placeholder}
-        value={form[key] as string}
-        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-        className="bg-card border-border"
-      />
-    </div>
-  );
+  const openEdit = (pn: PartNumber) => {
+    setEditId(pn.id);
+    setEditForm(pnToForm(pn));
+    setEditOpen(true);
+  };
 
-  const handleSubmit = () => {
-    const proj = projects.find((p) => p.id === form.projectId);
-    const newPN: PartNumber = {
-      id: `pn-${Date.now()}`,
-      projectId: form.projectId || "proj-1",
-      pn: form.pn || "TBD",
-      pnEra: form.pnEra || "TBD",
-      projeto: form.projeto || proj?.name || "TBD",
-      description: form.description || "TBD",
-      pb: form.pb || "TBD",
-      fornecedor: form.fornecedor || "TBD",
-      modal: form.modal,
-      statusPO: form.statusPO,
-      po: form.po || "",
-      previsaoEmissaoPO: form.previsaoEmissaoPO || "TBD",
-      rda: form.rda || "",
-      statusRDA: form.statusRDA,
-      tpo: form.tpo || "",
-      statusTPO: form.statusTPO,
-      previsaoEmissaoTPO: form.previsaoEmissaoTPO || "",
-    };
-    setPnList((prev) => [...prev, newPN]);
-    setForm(emptyForm);
-    setOpen(false);
+  const handleEdit = () => {
+    if (!editId) return;
+    setPnList((prev) => prev.map((p) => p.id === editId ? formToPN(editForm, editId) : p));
+    setEditOpen(false);
+    setEditId(null);
+  };
+
+  const handleDelete = () => {
+    if (!deleteId) return;
+    setPnList((prev) => prev.filter((p) => p.id !== deleteId));
+    setDeleteId(null);
   };
 
   return (
@@ -115,92 +176,44 @@ export default function PartNumbersPage() {
           <h1 className="text-2xl font-bold text-foreground">Part Numbers</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestão de componentes, pedidos e previsões</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus size={16} />
-              Novo Part Number
-            </Button>
+            <Button className="gap-2"><Plus size={16} />Novo Part Number</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Novo Part Number</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Projeto</label>
-                <Select value={form.projectId} onValueChange={(v) => {
-                  const proj = projects.find((p) => p.id === v);
-                  setForm((f) => ({ ...f, projectId: v, projeto: proj?.name || "" }));
-                }}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue placeholder="Selecione o projeto" /></SelectTrigger>
-                  <SelectContent>
-                    {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {field("pn", "PN *")}
-              {field("pnEra", "ERA")}
-              {field("description", "Descrição")}
-              {field("pb", "PB")}
-              {field("fornecedor", "Fornecedor")}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Modal</label>
-                <Select value={form.modal} onValueChange={(v) => setForm((f) => ({ ...f, modal: v as Modal }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["IRF", "Direct Buy", "Nacional"].map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">PO</p>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Status PO</label>
-                <Select value={form.statusPO} onValueChange={(v) => setForm((f) => ({ ...f, statusPO: v as StatusPO }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Com PO", "Pendente", "In Process"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {field("po", "Número da PO")}
-              {field("previsaoEmissaoPO", "Previsão Emissão PO (AAAA-MM-DD)")}
-
-              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">RDA</p>
-              {field("rda", "Número RDA")}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Status RDA</label>
-                <Select value={form.statusRDA} onValueChange={(v) => setForm((f) => ({ ...f, statusRDA: v as StatusRDA }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Com PO", "Pendente", "In Process", "NA"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">TPO</p>
-              {field("tpo", "Número TPO")}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Status TPO</label>
-                <Select value={form.statusTPO} onValueChange={(v) => setForm((f) => ({ ...f, statusTPO: v as StatusTPO }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Com PO", "Pendente", "In Process", "NA"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {field("previsaoEmissaoTPO", "Previsão Emissão TPO (AAAA-MM-DD)")}
-            </div>
+            <DialogHeader><DialogTitle>Novo Part Number</DialogTitle></DialogHeader>
+            <PNForm form={createForm} setForm={setCreateForm} />
             <DialogFooter className="gap-2">
-              <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
-              <Button onClick={handleSubmit} disabled={!form.pn.trim()}>Adicionar Part Number</Button>
+              <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+              <Button onClick={handleCreate} disabled={!createForm.pn.trim()}>Adicionar Part Number</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Part Number</DialogTitle></DialogHeader>
+          <PNForm form={editForm} setForm={setEditForm} />
+          <DialogFooter className="gap-2">
+            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+            <Button onClick={handleEdit}>Salvar Alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm dialog */}
+      <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Excluir Part Number</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir este Part Number? Esta ação não pode ser desfeita.</p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete}>Excluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Progress */}
       <Card className="bg-card border-border">
@@ -210,9 +223,7 @@ export default function PartNumbersPage() {
             <span className="text-sm font-bold text-primary">{progressPercentage}%</span>
           </div>
           <Progress value={progressPercentage} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-2">
-            {totalComPO} de {pnList.length} Part Numbers Finalizados com PO.
-          </p>
+          <p className="text-xs text-muted-foreground mt-2">{totalComPO} de {pnList.length} Part Numbers Finalizados com PO.</p>
         </CardContent>
       </Card>
 
@@ -221,37 +232,25 @@ export default function PartNumbersPage() {
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
             <ShoppingCart className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total PNs</p>
-              <p className="text-xl font-bold text-foreground">{pnList.length}</p>
-            </div>
+            <div><p className="text-xs text-muted-foreground">Total PNs</p><p className="text-xl font-bold text-foreground">{pnList.length}</p></div>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
             <ShoppingCart className="h-5 w-5 text-success" />
-            <div>
-              <p className="text-xs text-muted-foreground">Com PO</p>
-              <p className="text-xl font-bold text-success">{totalComPO}</p>
-            </div>
+            <div><p className="text-xs text-muted-foreground">Com PO</p><p className="text-xl font-bold text-success">{totalComPO}</p></div>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
             <Clock className="h-5 w-5 text-warning" />
-            <div>
-              <p className="text-xs text-muted-foreground">Pendente</p>
-              <p className="text-xl font-bold text-warning">{totalPendente}</p>
-            </div>
+            <div><p className="text-xs text-muted-foreground">Pendente</p><p className="text-xl font-bold text-warning">{totalPendente}</p></div>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
             <Loader2 className="h-5 w-5 text-info" />
-            <div>
-              <p className="text-xs text-muted-foreground">In Process</p>
-              <p className="text-xl font-bold text-info">{totalInProcess}</p>
-            </div>
+            <div><p className="text-xs text-muted-foreground">In Process</p><p className="text-xl font-bold text-info">{totalInProcess}</p></div>
           </CardContent>
         </Card>
       </div>
@@ -288,6 +287,7 @@ export default function PartNumbersPage() {
       {/* Table */}
       <Card className="bg-card border-border">
         <CardContent className="p-0">
+          <p className="text-[10px] text-muted-foreground px-3 pt-2 italic">Clique com o botão direito em uma linha para editar ou excluir</p>
           <div className="overflow-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card z-10">
@@ -299,23 +299,36 @@ export default function PartNumbersPage() {
               </thead>
               <tbody>
                 {filtered.map((pn, i) => (
-                  <tr key={pn.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
-                    <td className="p-3 font-medium text-foreground whitespace-nowrap">{pn.pn}</td>
-                    <td className="p-3 text-muted-foreground">{pn.pnEra}</td>
-                    <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.projeto}</td>
-                    <td className="p-3 text-muted-foreground max-w-[160px] truncate">{pn.description}</td>
-                    <td className="p-3 text-muted-foreground">{pn.pb}</td>
-                    <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.fornecedor}</td>
-                    <td className="p-3"><Badge variant="outline" className="text-[10px]">{pn.modal}</Badge></td>
-                    <td className="p-3">{statusPOBadge(pn.statusPO)}</td>
-                    <td className="p-3 text-muted-foreground">{pn.po || "—"}</td>
-                    <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.previsaoEmissaoPO || "—"}</td>
-                    <td className="p-3 text-muted-foreground">{pn.rda || "—"}</td>
-                    <td className="p-3">{statusPOBadge(pn.statusRDA)}</td>
-                    <td className="p-3 text-muted-foreground">{pn.tpo || "—"}</td>
-                    <td className="p-3">{statusPOBadge(pn.statusTPO)}</td>
-                    <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.previsaoEmissaoTPO || "—"}</td>
-                  </tr>
+                  <ContextMenu key={pn.id}>
+                    <ContextMenuTrigger asChild>
+                      <tr className={`border-b border-border/50 hover:bg-primary/10 cursor-pointer transition-colors ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
+                        <td className="p-3 font-medium text-foreground whitespace-nowrap">{pn.pn}</td>
+                        <td className="p-3 text-muted-foreground">{pn.pnEra}</td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.projeto}</td>
+                        <td className="p-3 text-muted-foreground max-w-[160px] truncate">{pn.description}</td>
+                        <td className="p-3 text-muted-foreground">{pn.pb}</td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.fornecedor}</td>
+                        <td className="p-3"><Badge variant="outline" className="text-[10px]">{pn.modal}</Badge></td>
+                        <td className="p-3">{statusPOBadge(pn.statusPO)}</td>
+                        <td className="p-3 text-muted-foreground">{pn.po || "—"}</td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.previsaoEmissaoPO || "—"}</td>
+                        <td className="p-3 text-muted-foreground">{pn.rda || "—"}</td>
+                        <td className="p-3">{statusPOBadge(pn.statusRDA)}</td>
+                        <td className="p-3 text-muted-foreground">{pn.tpo || "—"}</td>
+                        <td className="p-3">{statusPOBadge(pn.statusTPO)}</td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.previsaoEmissaoTPO || "—"}</td>
+                      </tr>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-44">
+                      <ContextMenuItem className="gap-2 cursor-pointer" onClick={() => openEdit(pn)}>
+                        ✏️ Editar
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem className="gap-2 cursor-pointer text-destructive focus:text-destructive" onClick={() => setDeleteId(pn.id)}>
+                        🗑️ Excluir
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
                   <tr><td colSpan={15} className="p-8 text-center text-muted-foreground">Nenhum part number encontrado</td></tr>

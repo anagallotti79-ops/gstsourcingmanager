@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 function DateCell({ field }: { field: DateField }) {
   const status = getDateStatus(field);
@@ -24,23 +27,92 @@ function DateCell({ field }: { field: DateField }) {
   return <span className={`text-xs font-medium ${colorClass}`}>{formatDate(dateStr)}</span>;
 }
 
-const emptyForm = {
-  projectId: "",
-  sourcePackageNumber: "",
-  description: "",
-  ppm: "",
-  pb: "",
-  dmDivision: "DMCA" as DmDivision,
-  category: "SPF" as PackageCategory,
-  status: "Source Package" as PackageStatus,
-  phaseTargetStatus: "On Track" as PhaseTargetStatus,
-  createdDate: "",
-  totalDays: "",
-  recommendationPredictionDate: "",
-  tkoTarget: "", tkoDone: "",
-  otTarget: "", otDone: "",
-  otopTarget: "", otopDone: "",
+const blankForm = {
+  projectId: "", sourcePackageNumber: "", description: "", ppm: "", pb: "",
+  dmDivision: "DMCA" as DmDivision, category: "SPF" as PackageCategory,
+  status: "Source Package" as PackageStatus, phaseTargetStatus: "On Track" as PhaseTargetStatus,
+  createdDate: "", totalDays: "", recommendationPredictionDate: "",
+  tkoTarget: "", tkoDone: "", otTarget: "", otDone: "", otopTarget: "", otopDone: "",
 };
+
+type FormState = typeof blankForm;
+
+function PkgForm({ form, setForm }: { form: FormState; setForm: React.Dispatch<React.SetStateAction<FormState>> }) {
+  const f = (key: keyof FormState, label: string, placeholder = "TBD") => (
+    <div key={key}>
+      <label className="text-sm font-medium text-foreground mb-1 block">{label}</label>
+      <Input placeholder={placeholder} value={form[key] as string}
+        onChange={(e) => setForm((s) => ({ ...s, [key]: e.target.value }))}
+        className="bg-card border-border" />
+    </div>
+  );
+  const sel = <K extends keyof FormState>(key: K, label: string, opts: string[]) => (
+    <div key={key}>
+      <label className="text-sm font-medium text-foreground mb-1 block">{label}</label>
+      <Select value={form[key] as string} onValueChange={(v) => setForm((s) => ({ ...s, [key]: v }))}>
+        <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
+        <SelectContent>{opts.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+      </Select>
+    </div>
+  );
+  return (
+    <div className="space-y-3 py-2">
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1 block">Projeto</label>
+        <Select value={form.projectId} onValueChange={(v) => setForm((s) => ({ ...s, projectId: v }))}>
+          <SelectTrigger className="bg-card border-border"><SelectValue placeholder="Selecione o projeto" /></SelectTrigger>
+          <SelectContent>{projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      {f("sourcePackageNumber", "Source Package Number")}
+      {f("description", "Descrição")}
+      {f("ppm", "PPM")} {f("pb", "PB")}
+      {sel("dmDivision", "DM Division", ["DMCA", "DMPT", "DMEM", "DMBI"])}
+      {sel("category", "Categoria", ["SPF", "TH", "PWT", "MO"])}
+      {sel("status", "Status", ["Source Package", "Pre-RFQ", "RFQ", "Offer Review", "Negotiation", "Summary", "Recommendation", "Closed"])}
+      {sel("phaseTargetStatus", "Target Status", ["On Track", "At Risk", "Late"])}
+      {f("createdDate", "Data de Criação (AAAA-MM-DD)", "2025-01-01")}
+      {f("totalDays", "Total de Dias", "90")}
+      {f("recommendationPredictionDate", "Previsão Recommendation (AAAA-MM-DD)", "2025-12-01")}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">TKO</p>
+      {f("tkoTarget", "TKO - Target (AAAA-MM-DD)")} {f("tkoDone", "TKO - Done (AAAA-MM-DD)")}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OT</p>
+      {f("otTarget", "OT - Target (AAAA-MM-DD)")} {f("otDone", "OT - Done (AAAA-MM-DD)")}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OTOP</p>
+      {f("otopTarget", "OTOP - Target (AAAA-MM-DD)")} {f("otopDone", "OTOP - Done (AAAA-MM-DD)")}
+    </div>
+  );
+}
+
+function pkgToForm(pkg: Package): FormState {
+  return {
+    projectId: pkg.projectId, sourcePackageNumber: pkg.sourcePackageNumber,
+    description: pkg.description, ppm: pkg.ppm, pb: pkg.pb,
+    dmDivision: pkg.dmDivision, category: pkg.category, status: pkg.status,
+    phaseTargetStatus: pkg.phaseTargetStatus,
+    createdDate: pkg.createdDate, totalDays: String(pkg.totalDays),
+    recommendationPredictionDate: pkg.recommendationPredictionDate,
+    tkoTarget: pkg.tko.target, tkoDone: pkg.tko.done || "",
+    otTarget: pkg.ot.target, otDone: pkg.ot.done || "",
+    otopTarget: pkg.otop.target, otopDone: pkg.otop.done || "",
+  };
+}
+
+function formToPkg(form: FormState, id: string): Package {
+  return {
+    id, projectId: form.projectId || "proj-1",
+    sourcePackageNumber: form.sourcePackageNumber || "TBD",
+    description: form.description || "TBD", ppm: form.ppm || "TBD", pb: form.pb || "TBD",
+    dmDivision: form.dmDivision, category: form.category, status: form.status,
+    phaseTargetStatus: form.phaseTargetStatus,
+    createdDate: form.createdDate || new Date().toISOString().slice(0, 10),
+    totalDays: Number(form.totalDays) || 0,
+    recommendationPredictionDate: form.recommendationPredictionDate || "TBD",
+    tko: { target: form.tkoTarget || "TBD", done: form.tkoDone || undefined },
+    ot: { target: form.otTarget || "TBD", done: form.otDone || undefined },
+    otop: { target: form.otopTarget || "TBD", done: form.otopDone || undefined },
+  };
+}
 
 export default function PackagesPage() {
   const [pkgList, setPkgList] = useState<Package[]>(initialPackages);
@@ -49,8 +121,18 @@ export default function PackagesPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterProject, setFilterProject] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+
+  // Create dialog
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<FormState>(blankForm);
+
+  // Edit dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<FormState>(blankForm);
+  const [editId, setEditId] = useState<string | null>(null);
+
+  // Delete confirm dialog
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return pkgList.filter((pkg) => {
@@ -66,52 +148,38 @@ export default function PackagesPage() {
   }, [pkgList, search, filterDM, filterStatus, filterProject, filterCategory]);
 
   const targetBadge = (status: string) => {
-    const cls =
-      status === "On Track" ? "bg-success text-success-foreground" :
+    const cls = status === "On Track" ? "bg-success text-success-foreground" :
       status === "At Risk" ? "bg-warning text-warning-foreground" :
       "bg-destructive text-destructive-foreground";
     return <Badge className={`text-[10px] ${cls}`}>{status}</Badge>;
   };
 
-  const totalClosed = pkgList.filter((pkg) => pkg.status === "Closed").length;
-  const progressPercentage = pkgList.length > 0
-    ? Math.round((totalClosed / pkgList.length) * 100)
-    : 0;
+  const totalClosed = pkgList.filter((p) => p.status === "Closed").length;
+  const progressPercentage = pkgList.length > 0 ? Math.round((totalClosed / pkgList.length) * 100) : 0;
 
-  const field = (key: keyof typeof form, label: string, placeholder = "TBD") => (
-    <div>
-      <label className="text-sm font-medium text-foreground mb-1 block">{label}</label>
-      <Input
-        placeholder={placeholder}
-        value={form[key] as string}
-        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-        className="bg-card border-border"
-      />
-    </div>
-  );
+  const handleCreate = () => {
+    setPkgList((prev) => [...prev, formToPkg(createForm, `pkg-${Date.now()}`)]);
+    setCreateForm(blankForm);
+    setCreateOpen(false);
+  };
 
-  const handleSubmit = () => {
-    const newPkg: Package = {
-      id: `pkg-${Date.now()}`,
-      projectId: form.projectId || "proj-1",
-      sourcePackageNumber: form.sourcePackageNumber || "TBD",
-      description: form.description || "TBD",
-      ppm: form.ppm || "TBD",
-      pb: form.pb || "TBD",
-      dmDivision: form.dmDivision,
-      category: form.category,
-      status: form.status,
-      phaseTargetStatus: form.phaseTargetStatus,
-      createdDate: form.createdDate || new Date().toISOString().slice(0, 10),
-      totalDays: Number(form.totalDays) || 0,
-      recommendationPredictionDate: form.recommendationPredictionDate || "TBD",
-      tko: { target: form.tkoTarget || "TBD", done: form.tkoDone || undefined },
-      ot: { target: form.otTarget || "TBD", done: form.otDone || undefined },
-      otop: { target: form.otopTarget || "TBD", done: form.otopDone || undefined },
-    };
-    setPkgList((prev) => [...prev, newPkg]);
-    setForm(emptyForm);
-    setOpen(false);
+  const openEdit = (pkg: Package) => {
+    setEditId(pkg.id);
+    setEditForm(pkgToForm(pkg));
+    setEditOpen(true);
+  };
+
+  const handleEdit = () => {
+    if (!editId) return;
+    setPkgList((prev) => prev.map((p) => p.id === editId ? formToPkg(editForm, editId) : p));
+    setEditOpen(false);
+    setEditId(null);
+  };
+
+  const handleDelete = () => {
+    if (!deleteId) return;
+    setPkgList((prev) => prev.filter((p) => p.id !== deleteId));
+    setDeleteId(null);
   };
 
   return (
@@ -121,89 +189,44 @@ export default function PackagesPage() {
           <h1 className="text-2xl font-bold text-foreground">Pacotes</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestão e acompanhamento de source packages</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus size={16} />
-              Novo Pacote
-            </Button>
+            <Button className="gap-2"><Plus size={16} />Novo Pacote</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Novo Pacote</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 py-2">
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Projeto</label>
-                <Select value={form.projectId} onValueChange={(v) => setForm((f) => ({ ...f, projectId: v }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue placeholder="Selecione o projeto" /></SelectTrigger>
-                  <SelectContent>
-                    {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {field("sourcePackageNumber", "Source Package Number")}
-              {field("description", "Descrição")}
-              {field("ppm", "PPM")}
-              {field("pb", "PB")}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">DM Division</label>
-                <Select value={form.dmDivision} onValueChange={(v) => setForm((f) => ({ ...f, dmDivision: v as DmDivision }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["DMCA", "DMPT", "DMEM", "DMBI"].map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Categoria</label>
-                <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v as PackageCategory }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["SPF", "TH", "PWT", "MO"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Status</label>
-                <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v as PackageStatus }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Source Package", "Pre-RFQ", "RFQ", "Offer Review", "Negotiation", "Summary", "Recommendation", "Closed"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Target Status</label>
-                <Select value={form.phaseTargetStatus} onValueChange={(v) => setForm((f) => ({ ...f, phaseTargetStatus: v as PhaseTargetStatus }))}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["On Track", "At Risk", "Late"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {field("createdDate", "Data de Criação (AAAA-MM-DD)", "2025-01-01")}
-              {field("totalDays", "Total de Dias", "90")}
-              {field("recommendationPredictionDate", "Previsão Recommendation (AAAA-MM-DD)", "2025-12-01")}
-              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">TKO</p>
-              {field("tkoTarget", "TKO - Target (AAAA-MM-DD)")}
-              {field("tkoDone", "TKO - Done (AAAA-MM-DD)")}
-              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OT</p>
-              {field("otTarget", "OT - Target (AAAA-MM-DD)")}
-              {field("otDone", "OT - Done (AAAA-MM-DD)")}
-              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OTOP</p>
-              {field("otopTarget", "OTOP - Target (AAAA-MM-DD)")}
-              {field("otopDone", "OTOP - Done (AAAA-MM-DD)")}
-            </div>
+            <DialogHeader><DialogTitle>Novo Pacote</DialogTitle></DialogHeader>
+            <PkgForm form={createForm} setForm={setCreateForm} />
             <DialogFooter className="gap-2">
-              <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
-              <Button onClick={handleSubmit}>Adicionar Pacote</Button>
+              <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+              <Button onClick={handleCreate}>Adicionar Pacote</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Pacote</DialogTitle></DialogHeader>
+          <PkgForm form={editForm} setForm={setEditForm} />
+          <DialogFooter className="gap-2">
+            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+            <Button onClick={handleEdit}>Salvar Alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm dialog */}
+      <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Excluir Pacote</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Tem certeza que deseja excluir este pacote? Esta ação não pode ser desfeita.</p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete}>Excluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Progress */}
       <Card className="bg-card border-border">
@@ -213,9 +236,7 @@ export default function PackagesPage() {
             <span className="text-sm font-bold text-primary">{progressPercentage}%</span>
           </div>
           <Progress value={progressPercentage} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-2">
-            {totalClosed} de {pkgList.length} Pacotes Fechados.
-          </p>
+          <p className="text-xs text-muted-foreground mt-2">{totalClosed} de {pkgList.length} Pacotes Fechados.</p>
         </CardContent>
       </Card>
 
@@ -258,6 +279,7 @@ export default function PackagesPage() {
       {/* Table */}
       <Card className="bg-card border-border">
         <CardContent className="p-0">
+          <p className="text-[10px] text-muted-foreground px-3 pt-2 italic">Clique com o botão direito em uma linha para editar, excluir ou cancelar</p>
           <div className="overflow-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card z-10">
@@ -269,22 +291,35 @@ export default function PackagesPage() {
               </thead>
               <tbody>
                 {filtered.map((pkg, i) => (
-                  <tr key={pkg.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
-                    <td className="p-3 font-medium text-foreground whitespace-nowrap">{pkg.sourcePackageNumber}</td>
-                    <td className="p-3 text-muted-foreground max-w-[180px] truncate">{pkg.description}</td>
-                    <td className="p-3 text-muted-foreground">{pkg.ppm}</td>
-                    <td className="p-3 text-muted-foreground">{pkg.pb}</td>
-                    <td className="p-3"><Badge variant="outline" className="text-[10px]">{pkg.dmDivision}</Badge></td>
-                    <td className="p-3 text-muted-foreground">{pkg.category}</td>
-                    <td className="p-3"><Badge variant="secondary" className="text-[10px]">{pkg.status}</Badge></td>
-                    <td className="p-3">{targetBadge(pkg.phaseTargetStatus)}</td>
-                    <td className="p-3 text-muted-foreground">{calculateWeeks(pkg.totalDays)}</td>
-                    <td className="p-3 text-muted-foreground">{calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate)}</td>
-                    <td className="p-3 text-muted-foreground whitespace-nowrap">{formatDate(pkg.recommendationPredictionDate)}</td>
-                    <td className="p-3 whitespace-nowrap"><DateCell field={pkg.tko} /></td>
-                    <td className="p-3 whitespace-nowrap"><DateCell field={pkg.ot} /></td>
-                    <td className="p-3 whitespace-nowrap"><DateCell field={pkg.otop} /></td>
-                  </tr>
+                  <ContextMenu key={pkg.id}>
+                    <ContextMenuTrigger asChild>
+                      <tr className={`border-b border-border/50 hover:bg-primary/10 cursor-pointer transition-colors ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
+                        <td className="p-3 font-medium text-foreground whitespace-nowrap">{pkg.sourcePackageNumber}</td>
+                        <td className="p-3 text-muted-foreground max-w-[180px] truncate">{pkg.description}</td>
+                        <td className="p-3 text-muted-foreground">{pkg.ppm}</td>
+                        <td className="p-3 text-muted-foreground">{pkg.pb}</td>
+                        <td className="p-3"><Badge variant="outline" className="text-[10px]">{pkg.dmDivision}</Badge></td>
+                        <td className="p-3 text-muted-foreground">{pkg.category}</td>
+                        <td className="p-3"><Badge variant="secondary" className="text-[10px]">{pkg.status}</Badge></td>
+                        <td className="p-3">{targetBadge(pkg.phaseTargetStatus)}</td>
+                        <td className="p-3 text-muted-foreground">{calculateWeeks(pkg.totalDays)}</td>
+                        <td className="p-3 text-muted-foreground">{calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate)}</td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">{formatDate(pkg.recommendationPredictionDate)}</td>
+                        <td className="p-3 whitespace-nowrap"><DateCell field={pkg.tko} /></td>
+                        <td className="p-3 whitespace-nowrap"><DateCell field={pkg.ot} /></td>
+                        <td className="p-3 whitespace-nowrap"><DateCell field={pkg.otop} /></td>
+                      </tr>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="w-40">
+                      <ContextMenuItem className="gap-2 cursor-pointer" onClick={() => openEdit(pkg)}>
+                        ✏️ Editar
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem className="gap-2 cursor-pointer text-destructive focus:text-destructive" onClick={() => setDeleteId(pkg.id)}>
+                        🗑️ Excluir
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
                   <tr><td colSpan={14} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
