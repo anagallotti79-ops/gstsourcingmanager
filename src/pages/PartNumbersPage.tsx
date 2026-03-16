@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { partNumbers as initialPartNumbers, projects } from "@/data/mockData";
+import { useCancelled } from "@/contexts/CancelledContext";
 import { PartNumber, Modal, StatusPO, StatusRDA, StatusTPO } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
