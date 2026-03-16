@@ -42,6 +42,7 @@ export interface Package {
   tko: DateField;
   ot: DateField;
   otop: DateField;
+  comments?: string;
 }
 
 export interface PartNumber {
@@ -62,4 +63,5 @@ export interface PartNumber {
   tpo: string;
   statusTPO: StatusTPO;
   previsaoEmissaoTPO: string;
+  comments?: string;
 }

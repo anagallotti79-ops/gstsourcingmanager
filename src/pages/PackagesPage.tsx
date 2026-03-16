@@ -33,6 +33,7 @@ const blankForm = {
   status: "Source Package" as PackageStatus, phaseTargetStatus: "On Track" as PhaseTargetStatus,
   createdDate: "", totalDays: "", recommendationPredictionDate: "",
   tkoTarget: "", tkoDone: "", otTarget: "", otDone: "", otopTarget: "", otopDone: "",
+  comments: "",
 };
 
 type FormState = typeof blankForm;
@@ -80,6 +81,16 @@ function PkgForm({ form, setForm }: { form: FormState; setForm: React.Dispatch<R
       {f("otTarget", "OT - Target (AAAA-MM-DD)")} {f("otDone", "OT - Done (AAAA-MM-DD)")}
       <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OTOP</p>
       {f("otopTarget", "OTOP - Target (AAAA-MM-DD)")} {f("otopDone", "OTOP - Done (AAAA-MM-DD)")}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">Comentários</p>
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1 block">Comentários</label>
+        <textarea
+          placeholder="Adicione observações sobre este pacote..."
+          value={form.comments || ""}
+          onChange={(e) => setForm((s) => ({ ...s, comments: e.target.value }))}
+          className="w-full rounded-md border border-border bg-card text-foreground text-sm p-2 min-h-[80px] resize-y placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      </div>
     </div>
   );
 }
@@ -95,6 +106,7 @@ function pkgToForm(pkg: Package): FormState {
     tkoTarget: pkg.tko.target, tkoDone: pkg.tko.done || "",
     otTarget: pkg.ot.target, otDone: pkg.ot.done || "",
     otopTarget: pkg.otop.target, otopDone: pkg.otop.done || "",
+    comments: pkg.comments || "",
   };
 }
 
@@ -111,6 +123,7 @@ function formToPkg(form: FormState, id: string): Package {
     tko: { target: form.tkoTarget || "TBD", done: form.tkoDone || undefined },
     ot: { target: form.otTarget || "TBD", done: form.otDone || undefined },
     otop: { target: form.otopTarget || "TBD", done: form.otopDone || undefined },
+    comments: form.comments || "",
   };
 }
 
@@ -283,7 +296,7 @@ export default function PackagesPage() {
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border">
-                  {["Source Package", "Descrição", "PPM", "PB", "DM Div.", "Cat.", "Status", "Target Status", "Sem. Total", "Sem. Previsão", "Data Previsão", "TKO", "OT", "OTOP"].map((h) => (
+                  {["Source Package", "Descrição", "PPM", "PB", "DM Div.", "Cat.", "Status", "Target Status", "Sem. Total", "Sem. Previsão", "Data Previsão", "TKO", "OT", "OTOP", "Comentários"].map((h) => (
                     <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -307,6 +320,11 @@ export default function PackagesPage() {
                         <td className="p-3 whitespace-nowrap"><DateCell field={pkg.tko} /></td>
                         <td className="p-3 whitespace-nowrap"><DateCell field={pkg.ot} /></td>
                         <td className="p-3 whitespace-nowrap"><DateCell field={pkg.otop} /></td>
+                        <td className="p-3 text-muted-foreground max-w-[160px]">
+                          {pkg.comments
+                            ? <span title={pkg.comments} className="block truncate max-w-[140px] cursor-help">{pkg.comments}</span>
+                            : <span className="text-muted-foreground/40">—</span>}
+                        </td>
                       </tr>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-40">
@@ -321,7 +339,7 @@ export default function PackagesPage() {
                   </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={14} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
+                  <tr><td colSpan={15} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
                 )}
               </tbody>
             </table>

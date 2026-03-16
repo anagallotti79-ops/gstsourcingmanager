@@ -27,6 +27,7 @@ const blankForm = {
   projectId: "", pn: "", pnEra: "", projeto: "", description: "", pb: "", fornecedor: "",
   modal: "Nacional" as Modal, statusPO: "Pendente" as StatusPO, po: "", previsaoEmissaoPO: "",
   rda: "", statusRDA: "NA" as StatusRDA, tpo: "", statusTPO: "NA" as StatusTPO, previsaoEmissaoTPO: "",
+  comments: "",
 };
 
 type FormState = typeof blankForm;
@@ -78,6 +79,16 @@ function PNForm({ form, setForm }: { form: FormState; setForm: React.Dispatch<Re
       {f("tpo", "Número TPO")}
       {sel("statusTPO", "Status TPO", ["Com PO", "Pendente", "In Process", "NA"])}
       {f("previsaoEmissaoTPO", "Previsão Emissão TPO (AAAA-MM-DD)")}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">Comentários</p>
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1 block">Comentários</label>
+        <textarea
+          placeholder="Adicione observações sobre este Part Number..."
+          value={form.comments || ""}
+          onChange={(e) => setForm((s) => ({ ...s, comments: e.target.value }))}
+          className="w-full rounded-md border border-border bg-card text-foreground text-sm p-2 min-h-[80px] resize-y placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      </div>
     </div>
   );
 }
@@ -89,6 +100,7 @@ function pnToForm(pn: PartNumber): FormState {
     modal: pn.modal, statusPO: pn.statusPO, po: pn.po, previsaoEmissaoPO: pn.previsaoEmissaoPO,
     rda: pn.rda, statusRDA: pn.statusRDA, tpo: pn.tpo, statusTPO: pn.statusTPO,
     previsaoEmissaoTPO: pn.previsaoEmissaoTPO,
+    comments: pn.comments || "",
   };
 }
 
@@ -103,6 +115,7 @@ function formToPN(form: FormState, id: string): PartNumber {
     po: form.po, previsaoEmissaoPO: form.previsaoEmissaoPO || "TBD",
     rda: form.rda, statusRDA: form.statusRDA, tpo: form.tpo,
     statusTPO: form.statusTPO, previsaoEmissaoTPO: form.previsaoEmissaoTPO,
+    comments: form.comments || "",
   };
 }
 
@@ -291,7 +304,7 @@ export default function PartNumbersPage() {
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border">
-                  {["PN", "ERA", "Projeto", "Descrição", "PB", "Fornecedor", "Modal", "Status PO", "PO", "Prev. PO", "RDA", "Status RDA", "TPO", "Status TPO", "Prev. TPO"].map((h) => (
+                  {["PN", "ERA", "Projeto", "Descrição", "PB", "Fornecedor", "Modal", "Status PO", "PO", "Prev. PO", "RDA", "Status RDA", "TPO", "Status TPO", "Prev. TPO", "Comentários"].map((h) => (
                     <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -316,6 +329,11 @@ export default function PartNumbersPage() {
                         <td className="p-3 text-muted-foreground">{pn.tpo || "—"}</td>
                         <td className="p-3">{statusPOBadge(pn.statusTPO)}</td>
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.previsaoEmissaoTPO || "—"}</td>
+                        <td className="p-3 text-muted-foreground max-w-[160px]">
+                          {pn.comments
+                            ? <span title={pn.comments} className="block truncate max-w-[140px] cursor-help">{pn.comments}</span>
+                            : <span className="text-muted-foreground/40">—</span>}
+                        </td>
                       </tr>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-44">
@@ -330,7 +348,7 @@ export default function PartNumbersPage() {
                   </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={15} className="p-8 text-center text-muted-foreground">Nenhum part number encontrado</td></tr>
+                  <tr><td colSpan={16} className="p-8 text-center text-muted-foreground">Nenhum part number encontrado</td></tr>
                 )}
               </tbody>
             </table>
