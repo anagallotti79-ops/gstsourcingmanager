@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { packages as initialPackages, projects } from "@/data/mockData";
+import { useCancelled } from "@/contexts/CancelledContext";
 import { Package, PackageStatus, PhaseTargetStatus, DmDivision, PackageCategory } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -134,6 +135,7 @@ export default function PackagesPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterProject, setFilterProject] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
+  const { cancelPackage, cancelledPackages, restorePackage } = useCancelled();
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
@@ -193,6 +195,12 @@ export default function PackagesPage() {
     setPkgList((prev) => prev.filter((p) => p.id !== deleteId));
     setDeleteId(null);
   };
+
+  const handleCancel = (pkg: Package) => {
+    cancelPackage(pkg);
+    setPkgList((prev) => prev.filter((p) => p.id !== pkg.id));
+  };
+
 
   return (
     <div className="space-y-4">
@@ -330,6 +338,10 @@ export default function PackagesPage() {
                     <ContextMenuContent className="w-40">
                       <ContextMenuItem className="gap-2 cursor-pointer" onClick={() => openEdit(pkg)}>
                         ✏️ Editar
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem className="gap-2 cursor-pointer text-warning focus:text-warning" onClick={() => handleCancel(pkg)}>
+                        🚫 Cancelar
                       </ContextMenuItem>
                       <ContextMenuSeparator />
                       <ContextMenuItem className="gap-2 cursor-pointer text-destructive focus:text-destructive" onClick={() => setDeleteId(pkg.id)}>

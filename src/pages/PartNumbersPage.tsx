@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { partNumbers as initialPartNumbers, projects } from "@/data/mockData";
+import { useCancelled } from "@/contexts/CancelledContext";
 import { PartNumber, Modal, StatusPO, StatusRDA, StatusTPO } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -121,6 +122,7 @@ function formToPN(form: FormState, id: string): PartNumber {
 
 export default function PartNumbersPage() {
   const [pnList, setPnList] = useState<PartNumber[]>(initialPartNumbers);
+  const { cancelPartNumber } = useCancelled();
   const [search, setSearch] = useState("");
   const [filterProject, setFilterProject] = useState("all");
   const [filterModal, setFilterModal] = useState("all");
@@ -179,6 +181,11 @@ export default function PartNumbersPage() {
     if (!deleteId) return;
     setPnList((prev) => prev.filter((p) => p.id !== deleteId));
     setDeleteId(null);
+  };
+
+  const handleCancel = (pn: PartNumber) => {
+    cancelPartNumber(pn);
+    setPnList((prev) => prev.filter((p) => p.id !== pn.id));
   };
 
   return (
@@ -339,6 +346,10 @@ export default function PartNumbersPage() {
                     <ContextMenuContent className="w-44">
                       <ContextMenuItem className="gap-2 cursor-pointer" onClick={() => openEdit(pn)}>
                         ✏️ Editar
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem className="gap-2 cursor-pointer text-warning focus:text-warning" onClick={() => handleCancel(pn)}>
+                        🚫 Cancelar
                       </ContextMenuItem>
                       <ContextMenuSeparator />
                       <ContextMenuItem className="gap-2 cursor-pointer text-destructive focus:text-destructive" onClick={() => setDeleteId(pn.id)}>
