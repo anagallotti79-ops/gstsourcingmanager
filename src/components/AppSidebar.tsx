@@ -18,6 +18,7 @@ const menuItems = [
   { title: "Visão Geral", url: "/", icon: LayoutDashboard },
   { title: "Pacotes", url: "/pacotes", icon: Package },
   { title: "Part Numbers", url: "/part-numbers", icon: Hash },
+  { title: "Cancelados", url: "/cancelados", icon: Ban },
 ];
 
 export function AppSidebar() {

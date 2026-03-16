@@ -348,6 +348,10 @@ export default function PartNumbersPage() {
                         ✏️ Editar
                       </ContextMenuItem>
                       <ContextMenuSeparator />
+                      <ContextMenuItem className="gap-2 cursor-pointer text-warning focus:text-warning" onClick={() => handleCancel(pn)}>
+                        🚫 Cancelar
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
                       <ContextMenuItem className="gap-2 cursor-pointer text-destructive focus:text-destructive" onClick={() => setDeleteId(pn.id)}>
                         🗑️ Excluir
                       </ContextMenuItem>

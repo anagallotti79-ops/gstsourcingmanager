@@ -346,6 +346,10 @@ export default function PackagesPage() {
                         ✏️ Editar
                       </ContextMenuItem>
                       <ContextMenuSeparator />
+                      <ContextMenuItem className="gap-2 cursor-pointer text-warning focus:text-warning" onClick={() => handleCancel(pkg)}>
+                        🚫 Cancelar
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
                       <ContextMenuItem className="gap-2 cursor-pointer text-destructive focus:text-destructive" onClick={() => setDeleteId(pkg.id)}>
                         🗑️ Excluir
                       </ContextMenuItem>

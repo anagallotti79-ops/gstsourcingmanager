@@ -3,11 +3,13 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CancelledProvider } from "@/contexts/CancelledContext";
 import { AppLayout } from "@/components/AppLayout";
 import OverviewPage from "@/pages/OverviewPage";
 import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import PackagesPage from "@/pages/PackagesPage";
 import PartNumbersPage from "@/pages/PartNumbersPage";
+import CancelledPage from "@/pages/CancelledPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -17,17 +19,20 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<OverviewPage />} />
-            <Route path="/projeto/:id" element={<ProjectDetailPage />} />
-            <Route path="/pacotes" element={<PackagesPage />} />
-            <Route path="/part-numbers" element={<PartNumbersPage />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <CancelledProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<OverviewPage />} />
+              <Route path="/projeto/:id" element={<ProjectDetailPage />} />
+              <Route path="/pacotes" element={<PackagesPage />} />
+              <Route path="/part-numbers" element={<PartNumbersPage />} />
+              <Route path="/cancelados" element={<CancelledPage />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </CancelledProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
