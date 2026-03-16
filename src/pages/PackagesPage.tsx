@@ -130,11 +130,10 @@ function formToPkg(form: FormState, id: string): Package {
 
 export default function PackagesPage() {
   const [pkgList, setPkgList] = useState<Package[]>(initialPackages);
-  const [search, setSearch] = useState("");
-  const [filterDM, setFilterDM] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterProject, setFilterProject] = useState("all");
-  const [filterCategory, setFilterCategory] = useState("all");
+  const { cancelPackage, cancelledPackages, restorePackage } = useCancelled();
+
+  // Listen for restored packages
+  const [lastRestoredPkg, setLastRestoredPkg] = useState<string | null>(null);
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
