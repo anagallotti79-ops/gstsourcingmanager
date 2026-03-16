@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ShoppingCart, Clock, Loader2, Plus } from "lucide-react";
+import { Search, ShoppingCart, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +16,11 @@ import {
 } from "@/components/ui/context-menu";
 
 const statusPOBadge = (status: string) => {
-  const cls =
-    status === "Com PO" ? "bg-success text-success-foreground" :
-    status === "Pendente" ? "bg-warning text-warning-foreground" :
-    status === "In Process" ? "bg-info text-info-foreground" :
-    "bg-muted text-muted-foreground";
-  return <Badge className={`text-[10px] ${cls}`}>{status}</Badge>;
+  if (status === "Com PO")    return <span className="flex items-center gap-1 text-xs font-medium text-success"><CheckCircle2 size={13} />{status}</span>;
+  if (status === "Pendente")  return <span className="flex items-center gap-1 text-xs font-medium text-warning"><Clock size={13} />{status}</span>;
+  if (status === "In Process") return <span className="flex items-center gap-1 text-xs font-medium text-info"><Loader2 size={13} />{status}</span>;
+  if (status === "NA")        return <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground"><Minus size={13} />{status}</span>;
+  return <span className="text-xs text-muted-foreground">{status}</span>;
 };
 
 const blankForm = {

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 import { formatDate, calculateWeeks, calculatePredictionWeeks, getDateStatus } from "@/lib/dateUtils";
 import type { DateField } from "@/data/types";
 import { Progress } from "@/components/ui/progress";
@@ -148,10 +148,9 @@ export default function PackagesPage() {
   }, [pkgList, search, filterDM, filterStatus, filterProject, filterCategory]);
 
   const targetBadge = (status: string) => {
-    const cls = status === "On Track" ? "bg-success text-success-foreground" :
-      status === "At Risk" ? "bg-warning text-warning-foreground" :
-      "bg-destructive text-destructive-foreground";
-    return <Badge className={`text-[10px] ${cls}`}>{status}</Badge>;
+    if (status === "On Track") return <span className="flex items-center gap-1 text-xs font-medium text-success"><CheckCircle2 size={13} />On Track</span>;
+    if (status === "At Risk")  return <span className="flex items-center gap-1 text-xs font-medium text-warning"><AlertTriangle size={13} />At Risk</span>;
+    return <span className="flex items-center gap-1 text-xs font-medium text-destructive"><XCircle size={13} />Late</span>;
   };
 
   const totalClosed = pkgList.filter((p) => p.status === "Closed").length;
