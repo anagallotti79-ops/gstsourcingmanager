@@ -122,7 +122,7 @@ function formToPN(form: FormState, id: string): PartNumber {
 
 export default function PartNumbersPage() {
   const [pnList, setPnList] = useState<PartNumber[]>(initialPartNumbers);
-  const [search, setSearch] = useState("");
+  const { cancelPartNumber } = useCancelled();
   const [filterProject, setFilterProject] = useState("all");
   const [filterModal, setFilterModal] = useState("all");
   const [filterStatusPO, setFilterStatusPO] = useState("all");
