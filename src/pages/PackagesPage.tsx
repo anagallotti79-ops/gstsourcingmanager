@@ -201,14 +201,6 @@ export default function PackagesPage() {
     setPkgList((prev) => prev.filter((p) => p.id !== pkg.id));
   };
 
-  // Restore handler: poll for changes in cancelledPackages length
-  useEffect(() => {
-    // Check if a package was restored that belongs to this list
-    const handler = () => {
-      // This is handled via the context - packages are restored via CancelledPage
-    };
-    handler();
-  }, [cancelledPackages]);
 
   return (
     <div className="space-y-4">
