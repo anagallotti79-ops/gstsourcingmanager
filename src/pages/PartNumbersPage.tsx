@@ -183,6 +183,11 @@ export default function PartNumbersPage() {
     setDeleteId(null);
   };
 
+  const handleCancel = (pn: PartNumber) => {
+    cancelPartNumber(pn);
+    setPnList((prev) => prev.filter((p) => p.id !== pn.id));
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-start">
