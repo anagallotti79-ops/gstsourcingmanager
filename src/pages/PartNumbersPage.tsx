@@ -285,7 +285,8 @@ export default function PartNumbersPage() {
               <Button onClick={handleCreate} disabled={!createForm.pn.trim()}>Adicionar Part Number</Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Edit dialog */}

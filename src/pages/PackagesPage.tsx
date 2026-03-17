@@ -298,7 +298,8 @@ export default function PackagesPage() {
               <Button onClick={handleCreate}>Adicionar Pacote</Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Edit dialog */}
