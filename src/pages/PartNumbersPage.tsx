@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { partNumbers as initialPartNumbers, projects } from "@/data/mockData";
 import { useCancelled } from "@/contexts/CancelledContext";
 import { PartNumber, Modal, StatusPO, StatusRDA, StatusTPO } from "@/data/types";
@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ShoppingCart, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus } from "lucide-react";
+import { Search, ShoppingCart, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus, FileSpreadsheet, FileText, Upload } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,8 @@ import {
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { exportToExcel, exportToPDF, parseImportedFile, type ExportColumn } from "@/lib/exportUtils";
+import { useToast } from "@/hooks/use-toast";
 
 const statusPOBadge = (status: string) => {
   if (status === "Com PO")    return <span className="flex items-center gap-1 text-xs font-medium text-success"><CheckCircle2 size={13} />{status}</span>;
@@ -188,6 +190,71 @@ export default function PartNumbersPage() {
     setPnList((prev) => prev.filter((p) => p.id !== pn.id));
   };
 
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pnColumns: ExportColumn[] = [
+    { header: "PN", accessor: (r) => String((r as unknown as PartNumber).pn) },
+    { header: "ERA", accessor: (r) => String((r as unknown as PartNumber).pnEra) },
+    { header: "Projeto", accessor: (r) => String((r as unknown as PartNumber).projeto) },
+    { header: "Descrição", accessor: (r) => String((r as unknown as PartNumber).description) },
+    { header: "PB", accessor: (r) => String((r as unknown as PartNumber).pb) },
+    { header: "Fornecedor", accessor: (r) => String((r as unknown as PartNumber).fornecedor) },
+    { header: "Modal", accessor: (r) => String((r as unknown as PartNumber).modal) },
+    { header: "Status PO", accessor: (r) => String((r as unknown as PartNumber).statusPO) },
+    { header: "PO", accessor: (r) => String((r as unknown as PartNumber).po) },
+    { header: "Prev. PO", accessor: (r) => String((r as unknown as PartNumber).previsaoEmissaoPO) },
+    { header: "RDA", accessor: (r) => String((r as unknown as PartNumber).rda) },
+    { header: "Status RDA", accessor: (r) => String((r as unknown as PartNumber).statusRDA) },
+    { header: "TPO", accessor: (r) => String((r as unknown as PartNumber).tpo) },
+    { header: "Status TPO", accessor: (r) => String((r as unknown as PartNumber).statusTPO) },
+    { header: "Prev. TPO", accessor: (r) => String((r as unknown as PartNumber).previsaoEmissaoTPO) },
+    { header: "Comentários", accessor: (r) => String((r as unknown as PartNumber).comments || "") },
+  ];
+
+  const handleExportExcel = () => {
+    exportToExcel(filtered as unknown as Record<string, unknown>[], pnColumns, "part-numbers");
+    toast({ title: "Exportado com sucesso", description: `${filtered.length} part numbers exportados para Excel.` });
+  };
+
+  const handleExportPDF = () => {
+    exportToPDF(filtered as unknown as Record<string, unknown>[], pnColumns, "part-numbers", "Part Numbers — Relatório");
+    toast({ title: "Exportado com sucesso", description: `${filtered.length} part numbers exportados para PDF.` });
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const rows = await parseImportedFile(file);
+      const newPNs: PartNumber[] = rows.map((row, i) => ({
+        id: `pn-imp-${Date.now()}-${i}`,
+        projectId: row["projectId"] || "proj-1",
+        pn: row["PN"] || row["pn"] || "TBD",
+        pnEra: row["ERA"] || row["pnEra"] || "TBD",
+        projeto: row["Projeto"] || row["projeto"] || "TBD",
+        description: row["Descrição"] || row["description"] || "TBD",
+        pb: row["PB"] || row["pb"] || "TBD",
+        fornecedor: row["Fornecedor"] || row["fornecedor"] || "TBD",
+        modal: (row["Modal"] || row["modal"] || "Nacional") as Modal,
+        statusPO: (row["Status PO"] || row["statusPO"] || "Pendente") as StatusPO,
+        po: row["PO"] || row["po"] || "",
+        previsaoEmissaoPO: row["Prev. PO"] || row["previsaoEmissaoPO"] || "TBD",
+        rda: row["RDA"] || row["rda"] || "",
+        statusRDA: (row["Status RDA"] || row["statusRDA"] || "NA") as StatusRDA,
+        tpo: row["TPO"] || row["tpo"] || "",
+        statusTPO: (row["Status TPO"] || row["statusTPO"] || "NA") as StatusTPO,
+        previsaoEmissaoTPO: row["Prev. TPO"] || row["previsaoEmissaoTPO"] || "",
+        comments: row["Comentários"] || row["comments"] || "",
+      }));
+      setPnList((prev) => [...prev, ...newPNs]);
+      toast({ title: "Importação concluída", description: `${newPNs.length} part numbers importados.` });
+    } catch {
+      toast({ title: "Erro na importação", description: "Não foi possível ler o arquivo.", variant: "destructive" });
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-start">
@@ -195,10 +262,21 @@ export default function PartNumbersPage() {
           <h1 className="text-2xl font-bold text-foreground">Part Numbers</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestão de componentes, pedidos e previsões</p>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2"><Plus size={16} />Novo Part Number</Button>
-          </DialogTrigger>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
+            <FileSpreadsheet size={14} />Excel
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportPDF}>
+            <FileText size={14} />PDF
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()}>
+            <Upload size={14} />Importar
+          </Button>
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" size="sm"><Plus size={16} />Novo Part Number</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Novo Part Number</DialogTitle></DialogHeader>
             <PNForm form={createForm} setForm={setCreateForm} />
@@ -207,7 +285,8 @@ export default function PartNumbersPage() {
               <Button onClick={handleCreate} disabled={!createForm.pn.trim()}>Adicionar Part Number</Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Edit dialog */}
