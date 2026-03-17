@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { packages as initialPackages, projects } from "@/data/mockData";
 import { useCancelled } from "@/contexts/CancelledContext";
 import { Package, PackageStatus, PhaseTargetStatus, DmDivision, PackageCategory } from "@/data/types";
@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertTriangle, XCircle, FileSpreadsheet, FileText, Upload } from "lucide-react";
 import { formatDate, calculateWeeks, calculatePredictionWeeks, getDateStatus } from "@/lib/dateUtils";
 import type { DateField } from "@/data/types";
 import { Progress } from "@/components/ui/progress";
@@ -17,6 +17,8 @@ import {
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { exportToExcel, exportToPDF, parseImportedFile, type ExportColumn } from "@/lib/exportUtils";
+import { useToast } from "@/hooks/use-toast";
 
 function DateCell({ field }: { field: DateField }) {
   const status = getDateStatus(field);
