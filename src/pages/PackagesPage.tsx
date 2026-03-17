@@ -203,6 +203,70 @@ export default function PackagesPage() {
     setPkgList((prev) => prev.filter((p) => p.id !== pkg.id));
   };
 
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pkgColumns: ExportColumn[] = [
+    { header: "Source Package", accessor: (r) => String((r as unknown as Package).sourcePackageNumber) },
+    { header: "Descrição", accessor: (r) => String((r as unknown as Package).description) },
+    { header: "PPM", accessor: (r) => String((r as unknown as Package).ppm) },
+    { header: "PB", accessor: (r) => String((r as unknown as Package).pb) },
+    { header: "DM Div.", accessor: (r) => String((r as unknown as Package).dmDivision) },
+    { header: "Categoria", accessor: (r) => String((r as unknown as Package).category) },
+    { header: "Status", accessor: (r) => String((r as unknown as Package).status) },
+    { header: "Target Status", accessor: (r) => String((r as unknown as Package).phaseTargetStatus) },
+    { header: "Total Dias", accessor: (r) => String((r as unknown as Package).totalDays) },
+    { header: "Data Previsão", accessor: (r) => String((r as unknown as Package).recommendationPredictionDate) },
+    { header: "TKO Target", accessor: (r) => String((r as unknown as Package).tko.target) },
+    { header: "TKO Done", accessor: (r) => String((r as unknown as Package).tko.done || "") },
+    { header: "OT Target", accessor: (r) => String((r as unknown as Package).ot.target) },
+    { header: "OT Done", accessor: (r) => String((r as unknown as Package).ot.done || "") },
+    { header: "OTOP Target", accessor: (r) => String((r as unknown as Package).otop.target) },
+    { header: "OTOP Done", accessor: (r) => String((r as unknown as Package).otop.done || "") },
+    { header: "Comentários", accessor: (r) => String((r as unknown as Package).comments || "") },
+  ];
+
+  const handleExportExcel = () => {
+    exportToExcel(filtered as unknown as Record<string, unknown>[], pkgColumns, "pacotes");
+    toast({ title: "Exportado com sucesso", description: `${filtered.length} pacotes exportados para Excel.` });
+  };
+
+  const handleExportPDF = () => {
+    exportToPDF(filtered as unknown as Record<string, unknown>[], pkgColumns, "pacotes", "Pacotes — Relatório");
+    toast({ title: "Exportado com sucesso", description: `${filtered.length} pacotes exportados para PDF.` });
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const rows = await parseImportedFile(file);
+      const newPkgs: Package[] = rows.map((row, i) => ({
+        id: `pkg-imp-${Date.now()}-${i}`,
+        projectId: row["projectId"] || "proj-1",
+        sourcePackageNumber: row["Source Package"] || row["sourcePackageNumber"] || "TBD",
+        description: row["Descrição"] || row["description"] || "TBD",
+        ppm: row["PPM"] || row["ppm"] || "TBD",
+        pb: row["PB"] || row["pb"] || "TBD",
+        dmDivision: (row["DM Div."] || row["dmDivision"] || "DMCA") as DmDivision,
+        category: (row["Categoria"] || row["category"] || "SPF") as PackageCategory,
+        status: (row["Status"] || row["status"] || "Source Package") as PackageStatus,
+        phaseTargetStatus: (row["Target Status"] || row["phaseTargetStatus"] || "On Track") as PhaseTargetStatus,
+        createdDate: row["createdDate"] || new Date().toISOString().slice(0, 10),
+        totalDays: Number(row["Total Dias"] || row["totalDays"]) || 0,
+        recommendationPredictionDate: row["Data Previsão"] || row["recommendationPredictionDate"] || "TBD",
+        tko: { target: row["TKO Target"] || "TBD", done: row["TKO Done"] || undefined },
+        ot: { target: row["OT Target"] || "TBD", done: row["OT Done"] || undefined },
+        otop: { target: row["OTOP Target"] || "TBD", done: row["OTOP Done"] || undefined },
+        comments: row["Comentários"] || row["comments"] || "",
+      }));
+      setPkgList((prev) => [...prev, ...newPkgs]);
+      toast({ title: "Importação concluída", description: `${newPkgs.length} pacotes importados.` });
+    } catch {
+      toast({ title: "Erro na importação", description: "Não foi possível ler o arquivo.", variant: "destructive" });
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   return (
     <div className="space-y-4">
@@ -211,10 +275,21 @@ export default function PackagesPage() {
           <h1 className="text-2xl font-bold text-foreground">Pacotes</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestão e acompanhamento de source packages</p>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2"><Plus size={16} />Novo Pacote</Button>
-          </DialogTrigger>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportExcel}>
+            <FileSpreadsheet size={14} />Excel
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportPDF}>
+            <FileText size={14} />PDF
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()}>
+            <Upload size={14} />Importar
+          </Button>
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" size="sm"><Plus size={16} />Novo Pacote</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Novo Pacote</DialogTitle></DialogHeader>
             <PkgForm form={createForm} setForm={setCreateForm} />
