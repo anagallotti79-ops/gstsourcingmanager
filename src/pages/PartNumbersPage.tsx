@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { partNumbers as initialPartNumbers, projects } from "@/data/mockData";
 import { useCancelled } from "@/contexts/CancelledContext";
 import { PartNumber, Modal, StatusPO, StatusRDA, StatusTPO } from "@/data/types";
@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ShoppingCart, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus } from "lucide-react";
+import { Search, ShoppingCart, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus, FileSpreadsheet, FileText, Upload } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,8 @@ import {
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { exportToExcel, exportToPDF, parseImportedFile, type ExportColumn } from "@/lib/exportUtils";
+import { useToast } from "@/hooks/use-toast";
 
 const statusPOBadge = (status: string) => {
   if (status === "Com PO")    return <span className="flex items-center gap-1 text-xs font-medium text-success"><CheckCircle2 size={13} />{status}</span>;
