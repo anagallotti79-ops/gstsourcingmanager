@@ -346,13 +346,16 @@ export default function ProjectDetailPage() {
                         <td className="p-3">{pn.fornecedor}</td>
                         <td className="p-3"><Badge variant="outline" className="text-xs">{pn.modal}</Badge></td>
                         <td className="p-3">
-                          <Badge className={`text-xs ${
-                            pn.statusPO === "Com PO" ? "bg-success text-success-foreground" :
-                            pn.statusPO === "Pendente" ? "bg-warning text-warning-foreground" :
-                            "bg-info text-info-foreground"
+                          <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                            pn.statusPO === "Com PO" ? "text-success" :
+                            pn.statusPO === "Pendente" ? "text-amber-500" :
+                            "text-blue-500"
                           }`}>
+                            {pn.statusPO === "Com PO" && <CheckCircle2 className="h-3.5 w-3.5" />}
+                            {pn.statusPO === "Pendente" && <Clock className="h-3.5 w-3.5" />}
+                            {pn.statusPO === "In Process" && <Clock className="h-3.5 w-3.5" />}
                             {pn.statusPO}
-                          </Badge>
+                          </span>
                         </td>
                         <td className="p-3 text-muted-foreground">{pn.po || "—"}</td>
                       </tr>
