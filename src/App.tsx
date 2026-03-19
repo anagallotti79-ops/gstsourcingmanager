@@ -21,6 +21,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <CancelledProvider>
+        <DataProvider>
         <BrowserRouter>
           <Routes>
             <Route element={<AppLayout />}>
