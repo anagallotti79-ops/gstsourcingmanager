@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { projects, packages, partNumbers } from "@/data/mockData";
+import { projects } from "@/data/mockData";
+import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -13,9 +14,10 @@ const statusColors: Record<string, string> = {
 
 export default function OverviewPage() {
   const navigate = useNavigate();
+  const { pkgList, pnList } = useData();
 
-  const totalPackages = packages.length;
-  const totalPNs = partNumbers.length;
+  const totalPackages = pkgList.length;
+  const totalPNs = pnList.length;
   const avgProgress = Math.round(projects.reduce((s, p) => s + p.progress, 0) / projects.length);
 
   const kpis = [
@@ -54,8 +56,8 @@ export default function OverviewPage() {
         <h2 className="text-lg font-semibold text-foreground mb-4">Projetos</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => {
-            const projPackages = packages.filter((p) => p.projectId === project.id);
-            const projPNs = partNumbers.filter((p) => p.projectId === project.id);
+            const projPackages = pkgList.filter((p) => p.projectId === project.id);
+            const projPNs = pnList.filter((p) => p.projectId === project.id);
             return (
               <Card
                 key={project.id}

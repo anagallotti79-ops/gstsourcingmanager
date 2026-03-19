@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { projects, packages, partNumbers } from "@/data/mockData";
+import { projects } from "@/data/mockData";
+import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,10 @@ import { calculatePredictionWeeks } from "@/lib/dateUtils";
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { pkgList, pnList } = useData();
   const project = projects.find((p) => p.id === id);
-  const projPackages = packages.filter((p) => p.projectId === id);
-  const projPNs = partNumbers.filter((p) => p.projectId === id);
+  const projPackages = pkgList.filter((p) => p.projectId === id);
+  const projPNs = pnList.filter((p) => p.projectId === id);
 
   if (!project) {
     return (
@@ -94,6 +96,12 @@ export default function ProjectDetailPage() {
     },
   };
 
+  const getPackageName = (packageId?: string) => {
+    if (!packageId) return "—";
+    const pkg = pkgList.find((p) => p.id === packageId);
+    return pkg?.sourcePackageNumber || "—";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -144,7 +152,7 @@ export default function ProjectDetailPage() {
 
           {/* Charts grid – first row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* 1. Commodity by DM Division – bar with count labels on top */}
+            {/* 1. Commodity by DM Division */}
             <Card className="bg-card border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Commodity by Phase (DM Division)</CardTitle>
@@ -164,7 +172,7 @@ export default function ProjectDetailPage() {
               </CardContent>
             </Card>
 
-            {/* 2. Prediction Target – donut based on sem.prediction thresholds */}
+            {/* 2. Prediction Target */}
             <Card className="bg-card border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -195,7 +203,7 @@ export default function ProjectDetailPage() {
               </CardContent>
             </Card>
 
-            {/* 3. Current Phase Target – stacked bars per phase */}
+            {/* 3. Current Phase Target */}
             <Card className="bg-card border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Current Phase Target</CardTitle>
@@ -217,7 +225,7 @@ export default function ProjectDetailPage() {
               </CardContent>
             </Card>
 
-            {/* 4. Status PO – Part Numbers (unchanged) */}
+            {/* 4. Status PO */}
             <Card className="bg-card border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Status PO - Part Numbers</CardTitle>
@@ -246,7 +254,7 @@ export default function ProjectDetailPage() {
             </Card>
           </div>
 
-          {/* 5. Monthly Closing Prediction – full width Area chart */}
+          {/* 5. Monthly Closing Prediction */}
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -333,7 +341,7 @@ export default function ProjectDetailPage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border">
-                      {["PN", "Descrição", "Fornecedor", "Modal", "Status PO", "PO"].map((h) => (
+                      {["PN", "Descrição", "Fornecedor", "Modal", "Pacote", "Status PO", "PO"].map((h) => (
                         <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -345,6 +353,7 @@ export default function ProjectDetailPage() {
                         <td className="p-3 text-muted-foreground max-w-[200px] truncate">{pn.description}</td>
                         <td className="p-3">{pn.fornecedor}</td>
                         <td className="p-3"><Badge variant="outline" className="text-xs">{pn.modal}</Badge></td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">{getPackageName(pn.packageId)}</td>
                         <td className="p-3">
                           <span className={`inline-flex items-center gap-1 text-xs font-medium ${
                             pn.statusPO === "Com PO" ? "text-success" :

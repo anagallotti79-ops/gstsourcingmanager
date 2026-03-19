@@ -1,12 +1,13 @@
 import { useState, useMemo, useRef } from "react";
-import { packages as initialPackages, projects } from "@/data/mockData";
+import { projects } from "@/data/mockData";
+import { useData } from "@/contexts/DataContext";
 import { useCancelled } from "@/contexts/CancelledContext";
-import { Package, PackageStatus, PhaseTargetStatus, DmDivision, PackageCategory } from "@/data/types";
+import { Package, PackageStatus, PhaseTargetStatus, DmDivision, PackageCategory, Modal, PartNumber } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, CheckCircle2, AlertTriangle, XCircle, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { Search, Plus, CheckCircle2, AlertTriangle, XCircle, FileSpreadsheet, FileText, Upload, Trash2 } from "lucide-react";
 import { formatDate, calculateWeeks, calculatePredictionWeeks, getDateStatus } from "@/lib/dateUtils";
 import type { DateField } from "@/data/types";
 import { Progress } from "@/components/ui/progress";
@@ -40,6 +41,16 @@ const blankForm = {
 };
 
 type FormState = typeof blankForm;
+
+interface InlinePNForm {
+  pn: string;
+  pnEra: string;
+  description: string;
+  fornecedor: string;
+  modal: Modal;
+}
+
+const blankInlinePN: InlinePNForm = { pn: "", pnEra: "", description: "", fornecedor: "", modal: "Nacional" };
 
 function PkgForm({ form, setForm }: { form: FormState; setForm: React.Dispatch<React.SetStateAction<FormState>> }) {
   const f = (key: keyof FormState, label: string, placeholder = "TBD") => (
@@ -98,6 +109,59 @@ function PkgForm({ form, setForm }: { form: FormState; setForm: React.Dispatch<R
   );
 }
 
+function InlinePNSection({ pnRows, setPnRows }: { pnRows: InlinePNForm[]; setPnRows: React.Dispatch<React.SetStateAction<InlinePNForm[]>> }) {
+  const addRow = () => setPnRows((prev) => [...prev, { ...blankInlinePN }]);
+  const removeRow = (idx: number) => setPnRows((prev) => prev.filter((_, i) => i !== idx));
+  const updateRow = (idx: number, key: keyof InlinePNForm, value: string) =>
+    setPnRows((prev) => prev.map((r, i) => i === idx ? { ...r, [key]: value } : r));
+
+  return (
+    <div className="space-y-3 pt-2">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">Part Numbers (opcional)</p>
+        <Button type="button" variant="outline" size="sm" className="gap-1 text-xs h-7" onClick={addRow}>
+          <Plus size={12} />Adicionar PN
+        </Button>
+      </div>
+      {pnRows.map((row, idx) => (
+        <div key={idx} className="grid grid-cols-[1fr_1fr_1.5fr_1.5fr_auto_auto] gap-2 items-end border border-border/50 rounded-md p-2 bg-muted/20">
+          <div>
+            <label className="text-[10px] text-muted-foreground">PN *</label>
+            <Input placeholder="PN-XXX" value={row.pn} onChange={(e) => updateRow(idx, "pn", e.target.value)} className="bg-card border-border h-8 text-xs" />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground">ERA</label>
+            <Input placeholder="ERA-01" value={row.pnEra} onChange={(e) => updateRow(idx, "pnEra", e.target.value)} className="bg-card border-border h-8 text-xs" />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground">Descrição</label>
+            <Input placeholder="Descrição" value={row.description} onChange={(e) => updateRow(idx, "description", e.target.value)} className="bg-card border-border h-8 text-xs" />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground">Fornecedor</label>
+            <Input placeholder="Fornecedor" value={row.fornecedor} onChange={(e) => updateRow(idx, "fornecedor", e.target.value)} className="bg-card border-border h-8 text-xs" />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground">Modal</label>
+            <Select value={row.modal} onValueChange={(v) => updateRow(idx, "modal", v)}>
+              <SelectTrigger className="bg-card border-border h-8 text-xs w-[100px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {["IRF", "Direct Buy", "Nacional"].map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => removeRow(idx)}>
+            <Trash2 size={14} />
+          </Button>
+        </div>
+      ))}
+      {pnRows.length === 0 && (
+        <p className="text-xs text-muted-foreground/60 italic text-center py-2">Nenhum Part Number adicionado. Clique em "Adicionar PN" para vincular PNs a este pacote.</p>
+      )}
+    </div>
+  );
+}
+
 function pkgToForm(pkg: Package): FormState {
   return {
     projectId: pkg.projectId, sourcePackageNumber: pkg.sourcePackageNumber,
@@ -131,7 +195,7 @@ function formToPkg(form: FormState, id: string): Package {
 }
 
 export default function PackagesPage() {
-  const [pkgList, setPkgList] = useState<Package[]>(initialPackages);
+  const { pkgList, setPkgList, addPackage, addPartNumbers } = useData();
   const [search, setSearch] = useState("");
   const [filterDM, setFilterDM] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -142,6 +206,7 @@ export default function PackagesPage() {
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<FormState>(blankForm);
+  const [createPNRows, setCreatePNRows] = useState<InlinePNForm[]>([]);
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
@@ -174,8 +239,39 @@ export default function PackagesPage() {
   const progressPercentage = pkgList.length > 0 ? Math.round((totalClosed / pkgList.length) * 100) : 0;
 
   const handleCreate = () => {
-    setPkgList((prev) => [...prev, formToPkg(createForm, `pkg-${Date.now()}`)]);
+    const pkgId = `pkg-${Date.now()}`;
+    const newPkg = formToPkg(createForm, pkgId);
+    addPackage(newPkg);
+
+    // Create linked part numbers
+    const validPNs = createPNRows.filter((r) => r.pn.trim());
+    if (validPNs.length > 0) {
+      const proj = projects.find((p) => p.id === createForm.projectId);
+      const newPNs: PartNumber[] = validPNs.map((row, i) => ({
+        id: `pn-${Date.now()}-${i}`,
+        packageId: pkgId,
+        projectId: createForm.projectId || "proj-1",
+        pn: row.pn,
+        pnEra: row.pnEra || "TBD",
+        projeto: proj?.name || "TBD",
+        description: row.description || "TBD",
+        pb: createForm.pb || "TBD",
+        fornecedor: row.fornecedor || "TBD",
+        modal: row.modal as Modal,
+        statusPO: "Pendente",
+        po: "",
+        previsaoEmissaoPO: "",
+        rda: "",
+        statusRDA: "NA",
+        tpo: "",
+        statusTPO: "NA",
+        previsaoEmissaoTPO: "",
+      }));
+      addPartNumbers(newPNs);
+    }
+
     setCreateForm(blankForm);
+    setCreatePNRows([]);
     setCreateOpen(false);
   };
 
@@ -286,13 +382,14 @@ export default function PackagesPage() {
             <Upload size={14} />Importar
           </Button>
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) { setCreatePNRows([]); setCreateForm(blankForm); } }}>
             <DialogTrigger asChild>
               <Button className="gap-2" size="sm"><Plus size={16} />Novo Pacote</Button>
             </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Novo Pacote</DialogTitle></DialogHeader>
             <PkgForm form={createForm} setForm={setCreateForm} />
+            <InlinePNSection pnRows={createPNRows} setPnRows={setCreatePNRows} />
             <DialogFooter className="gap-2">
               <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
               <Button onClick={handleCreate}>Adicionar Pacote</Button>

@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from "react";
-import { partNumbers as initialPartNumbers, projects } from "@/data/mockData";
+import { projects } from "@/data/mockData";
+import { useData } from "@/contexts/DataContext";
 import { useCancelled } from "@/contexts/CancelledContext";
 import { PartNumber, Modal, StatusPO, StatusRDA, StatusTPO } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,10 +108,11 @@ function pnToForm(pn: PartNumber): FormState {
   };
 }
 
-function formToPN(form: FormState, id: string): PartNumber {
+function formToPN(form: FormState, id: string, packageId?: string): PartNumber {
   const proj = projects.find((p) => p.id === form.projectId);
   return {
     id, projectId: form.projectId || "proj-1",
+    packageId,
     pn: form.pn || "TBD", pnEra: form.pnEra || "TBD",
     projeto: form.projeto || proj?.name || "TBD",
     description: form.description || "TBD", pb: form.pb || "TBD",
@@ -123,7 +125,7 @@ function formToPN(form: FormState, id: string): PartNumber {
 }
 
 export default function PartNumbersPage() {
-  const [pnList, setPnList] = useState<PartNumber[]>(initialPartNumbers);
+  const { pnList, setPnList, pkgList } = useData();
   const { cancelPartNumber } = useCancelled();
   const [search, setSearch] = useState("");
   const [filterProject, setFilterProject] = useState("all");
@@ -138,6 +140,7 @@ export default function PartNumbersPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<FormState>(blankForm);
   const [editId, setEditId] = useState<string | null>(null);
+  const [editPackageId, setEditPackageId] = useState<string | undefined>(undefined);
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -168,13 +171,14 @@ export default function PartNumbersPage() {
 
   const openEdit = (pn: PartNumber) => {
     setEditId(pn.id);
+    setEditPackageId(pn.packageId);
     setEditForm(pnToForm(pn));
     setEditOpen(true);
   };
 
   const handleEdit = () => {
     if (!editId) return;
-    setPnList((prev) => prev.map((p) => p.id === editId ? formToPN(editForm, editId) : p));
+    setPnList((prev) => prev.map((p) => p.id === editId ? formToPN(editForm, editId, editPackageId) : p));
     setEditOpen(false);
     setEditId(null);
   };
@@ -190,6 +194,12 @@ export default function PartNumbersPage() {
     setPnList((prev) => prev.filter((p) => p.id !== pn.id));
   };
 
+  const getPackageName = (packageId?: string) => {
+    if (!packageId) return "—";
+    const pkg = pkgList.find((p) => p.id === packageId);
+    return pkg?.sourcePackageNumber || "—";
+  };
+
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -201,6 +211,7 @@ export default function PartNumbersPage() {
     { header: "PB", accessor: (r) => String((r as unknown as PartNumber).pb) },
     { header: "Fornecedor", accessor: (r) => String((r as unknown as PartNumber).fornecedor) },
     { header: "Modal", accessor: (r) => String((r as unknown as PartNumber).modal) },
+    { header: "Pacote", accessor: (r) => getPackageName((r as unknown as PartNumber).packageId) },
     { header: "Status PO", accessor: (r) => String((r as unknown as PartNumber).statusPO) },
     { header: "PO", accessor: (r) => String((r as unknown as PartNumber).po) },
     { header: "Prev. PO", accessor: (r) => String((r as unknown as PartNumber).previsaoEmissaoPO) },
@@ -390,7 +401,7 @@ export default function PartNumbersPage() {
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border">
-                  {["PN", "ERA", "Projeto", "Descrição", "PB", "Fornecedor", "Modal", "Status PO", "PO", "Prev. PO", "RDA", "Status RDA", "TPO", "Status TPO", "Prev. TPO", "Comentários"].map((h) => (
+                  {["PN", "ERA", "Projeto", "Descrição", "PB", "Fornecedor", "Modal", "Pacote", "Status PO", "PO", "Prev. PO", "RDA", "Status RDA", "TPO", "Status TPO", "Prev. TPO", "Comentários"].map((h) => (
                     <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -407,6 +418,7 @@ export default function PartNumbersPage() {
                         <td className="p-3 text-muted-foreground">{pn.pb}</td>
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.fornecedor}</td>
                         <td className="p-3"><Badge variant="outline" className="text-[10px]">{pn.modal}</Badge></td>
+                        <td className="p-3 text-muted-foreground whitespace-nowrap">{getPackageName(pn.packageId)}</td>
                         <td className="p-3">{statusPOBadge(pn.statusPO)}</td>
                         <td className="p-3 text-muted-foreground">{pn.po || "—"}</td>
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.previsaoEmissaoPO || "—"}</td>
@@ -438,7 +450,7 @@ export default function PartNumbersPage() {
                   </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={16} className="p-8 text-center text-muted-foreground">Nenhum part number encontrado</td></tr>
+                  <tr><td colSpan={17} className="p-8 text-center text-muted-foreground">Nenhum part number encontrado</td></tr>
                 )}
               </tbody>
             </table>
