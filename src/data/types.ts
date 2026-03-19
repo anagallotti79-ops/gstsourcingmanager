@@ -47,6 +47,7 @@ export interface Package {
 
 export interface PartNumber {
   id: string;
+  packageId?: string;
   projectId: string;
   pn: string;
   pnEra: string;

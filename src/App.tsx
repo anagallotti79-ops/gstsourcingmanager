@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CancelledProvider } from "@/contexts/CancelledContext";
+import { DataProvider } from "@/contexts/DataContext";
 import { AppLayout } from "@/components/AppLayout";
 import OverviewPage from "@/pages/OverviewPage";
 import ProjectDetailPage from "@/pages/ProjectDetailPage";
@@ -20,6 +21,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <CancelledProvider>
+        <DataProvider>
         <BrowserRouter>
           <Routes>
             <Route element={<AppLayout />}>
@@ -32,6 +34,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </DataProvider>
       </CancelledProvider>
     </TooltipProvider>
   </QueryClientProvider>
