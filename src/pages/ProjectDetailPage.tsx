@@ -306,13 +306,16 @@ export default function ProjectDetailPage() {
                         <td className="p-3">{pkg.category}</td>
                         <td className="p-3"><Badge variant="secondary" className="text-xs">{pkg.status}</Badge></td>
                         <td className="p-3">
-                          <Badge className={`text-xs ${
-                            pkg.phaseTargetStatus === "On Track" ? "bg-success text-success-foreground" :
-                            pkg.phaseTargetStatus === "At Risk" ? "bg-warning text-warning-foreground" :
-                            "bg-destructive text-destructive-foreground"
+                          <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                            pkg.phaseTargetStatus === "On Track" ? "text-success" :
+                            pkg.phaseTargetStatus === "At Risk" ? "text-amber-500" :
+                            "text-destructive"
                           }`}>
+                            {pkg.phaseTargetStatus === "On Track" && <CheckCircle2 className="h-3.5 w-3.5" />}
+                            {pkg.phaseTargetStatus === "At Risk" && <AlertTriangle className="h-3.5 w-3.5" />}
+                            {pkg.phaseTargetStatus === "Late" && <XCircle className="h-3.5 w-3.5" />}
                             {pkg.phaseTargetStatus}
-                          </Badge>
+                          </span>
                         </td>
                       </tr>
                     ))}
