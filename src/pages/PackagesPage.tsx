@@ -362,27 +362,77 @@ export default function PackagesPage() {
     if (!file) return;
     try {
       const rows = await parseImportedFile(file);
-      const newPkgs: Package[] = rows.map((row, i) => ({
-        id: `pkg-imp-${Date.now()}-${i}`,
-        projectId: row["projectId"] || "proj-1",
-        sourcePackageNumber: row["Source Package"] || row["sourcePackageNumber"] || "TBD",
-        description: row["Descrição"] || row["description"] || "TBD",
-        ppm: row["PPM"] || row["ppm"] || "TBD",
-        pb: row["PB"] || row["pb"] || "TBD",
-        dmDivision: (row["DM Div."] || row["dmDivision"] || "DMCA") as DmDivision,
-        category: (row["Categoria"] || row["category"] || "SPF") as PackageCategory,
-        status: (row["Status"] || row["status"] || "Source Package") as PackageStatus,
-        phaseTargetStatus: (row["Target Status"] || row["phaseTargetStatus"] || "On Track") as PhaseTargetStatus,
-        createdDate: row["createdDate"] || new Date().toISOString().slice(0, 10),
-        totalDays: Number(row["Total Dias"] || row["totalDays"]) || 0,
-        recommendationPredictionDate: row["Data Previsão"] || row["recommendationPredictionDate"] || "TBD",
-        tko: { target: row["TKO Target"] || "TBD", done: row["TKO Done"] || undefined },
-        ot: { target: row["OT Target"] || "TBD", done: row["OT Done"] || undefined },
-        otop: { target: row["OTOP Target"] || "TBD", done: row["OTOP Done"] || undefined },
-        comments: row["Comentários"] || row["comments"] || "",
-      }));
+
+      // Group rows by Source Package to avoid duplicate packages
+      const grouped = new Map<string, { pkgRow: Record<string, string>; pnRows: Record<string, string>[] }>();
+      for (const row of rows) {
+        const spn = row["Source Package"] || row["sourcePackageNumber"] || "TBD";
+        if (!grouped.has(spn)) {
+          grouped.set(spn, { pkgRow: row, pnRows: [] });
+        }
+        // If row has PN data, collect it
+        const pnValue = row["PN"] || row["pn"] || "";
+        if (pnValue.trim()) {
+          grouped.get(spn)!.pnRows.push(row);
+        }
+      }
+
+      const newPkgs: Package[] = [];
+      const newPNs: PartNumber[] = [];
+      let pkgIdx = 0;
+
+      for (const [, { pkgRow, pnRows }] of grouped) {
+        const pkgId = `pkg-imp-${Date.now()}-${pkgIdx++}`;
+        newPkgs.push({
+          id: pkgId,
+          projectId: pkgRow["projectId"] || "proj-1",
+          sourcePackageNumber: pkgRow["Source Package"] || pkgRow["sourcePackageNumber"] || "TBD",
+          description: pkgRow["Descrição"] || pkgRow["description"] || "TBD",
+          ppm: pkgRow["PPM"] || pkgRow["ppm"] || "TBD",
+          pb: pkgRow["PB"] || pkgRow["pb"] || "TBD",
+          dmDivision: (pkgRow["DM Div."] || pkgRow["dmDivision"] || "DMCA") as DmDivision,
+          category: (pkgRow["Categoria"] || pkgRow["category"] || "SPF") as PackageCategory,
+          status: (pkgRow["Status"] || pkgRow["status"] || "Source Package") as PackageStatus,
+          phaseTargetStatus: (pkgRow["Target Status"] || pkgRow["phaseTargetStatus"] || "On Track") as PhaseTargetStatus,
+          createdDate: pkgRow["createdDate"] || new Date().toISOString().slice(0, 10),
+          totalDays: Number(pkgRow["Total Dias"] || pkgRow["totalDays"]) || 0,
+          recommendationPredictionDate: pkgRow["Data Previsão"] || pkgRow["recommendationPredictionDate"] || "TBD",
+          tko: { target: pkgRow["TKO Target"] || "TBD", done: pkgRow["TKO Done"] || undefined },
+          ot: { target: pkgRow["OT Target"] || "TBD", done: pkgRow["OT Done"] || undefined },
+          otop: { target: pkgRow["OTOP Target"] || "TBD", done: pkgRow["OTOP Done"] || undefined },
+          comments: pkgRow["Comentários"] || pkgRow["comments"] || "",
+        });
+
+        // Create linked PNs
+        for (let j = 0; j < pnRows.length; j++) {
+          const r = pnRows[j];
+          newPNs.push({
+            id: `pn-imp-${Date.now()}-${pkgIdx}-${j}`,
+            packageId: pkgId,
+            projectId: pkgRow["projectId"] || "proj-1",
+            pn: r["PN"] || r["pn"] || "TBD",
+            pnEra: r["ERA"] || r["pnEra"] || "TBD",
+            projeto: r["Projeto"] || r["projeto"] || "TBD",
+            description: r["Descrição PN"] || r["description"] || "TBD",
+            pb: pkgRow["PB"] || pkgRow["pb"] || "TBD",
+            fornecedor: r["Fornecedor"] || r["fornecedor"] || "TBD",
+            modal: (r["Modal"] || r["modal"] || "Nacional") as Modal,
+            statusPO: (r["Status PO"] || r["statusPO"] || "Pendente") as StatusPO,
+            po: r["PO"] || r["po"] || "",
+            previsaoEmissaoPO: r["Prev. PO"] || r["previsaoEmissaoPO"] || "TBD",
+            rda: r["RDA"] || r["rda"] || "",
+            statusRDA: (r["Status RDA"] || r["statusRDA"] || "NA") as StatusRDA,
+            tpo: r["TPO"] || r["tpo"] || "",
+            statusTPO: (r["Status TPO"] || r["statusTPO"] || "NA") as StatusTPO,
+            previsaoEmissaoTPO: r["Prev. TPO"] || r["previsaoEmissaoTPO"] || "",
+            comments: r["Comentários"] || r["comments"] || "",
+          });
+        }
+      }
+
       setPkgList((prev) => [...prev, ...newPkgs]);
-      toast({ title: "Importação concluída", description: `${newPkgs.length} pacotes importados.` });
+      if (newPNs.length > 0) addPartNumbers(newPNs);
+      toast({ title: "Importação concluída", description: `${newPkgs.length} pacotes${newPNs.length > 0 ? ` e ${newPNs.length} part numbers` : ""} importados.` });
     } catch {
       toast({ title: "Erro na importação", description: "Não foi possível ler o arquivo.", variant: "destructive" });
     }
