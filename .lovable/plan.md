@@ -1,48 +1,35 @@
 
 
-# Adicionar Part Numbers ao criar Pacote + coluna "Pacote" na aba de Part Numbers
+# Correlacionar Pacotes ↔ Part Numbers na Exportação e Importação
 
-## Problema atual
-- As páginas de Pacotes e Part Numbers usam estado local independente (`useState`), sem compartilhamento de dados
-- Não existe vínculo entre um Part Number e um Pacote
-- Não é possível cadastrar Part Numbers ao criar um Pacote
+## Resumo
+Atualizar a lógica de exportação e importação para que:
+- **Exportação de Pacotes**: inclua colunas dos PNs vinculados (cada PN em uma linha separada, repetindo dados do pacote)
+- **Exportação de PNs**: inclua coluna "Pacote" (sourcePackageNumber) — já existe
+- **Importação de Pacotes**: linhas que contenham dados de PN (coluna "PN" preenchida) criam automaticamente os PNs na aba de Part Numbers
+- **Importação de PNs**: verifica se o pacote (coluna "Pacote" ou "Source Package") já existe na lista; se não existir, cria o pacote automaticamente na aba de Pacotes
 
 ## Mudanças
 
-### 1. Criar contexto compartilhado de dados (`src/contexts/DataContext.tsx`)
-- Mover os estados de `pkgList` e `pnList` para um contexto global
-- Expor funções: `addPackage`, `addPartNumber`, `updatePackage`, `updatePartNumber`, `deletePackage`, `deletePartNumber`
-- Ambas as páginas consomem este contexto em vez de `useState` local
+### 1. PackagesPage.tsx — Exportação
+- Alterar `pkgColumns` e `handleExportExcel`/`handleExportPDF` para exportar dados "explodidos": cada pacote gera N linhas (uma por PN vinculado), com colunas do pacote + colunas do PN (PN, ERA, Descrição PN, Fornecedor, Modal, Status PO, PO, etc.)
+- Pacotes sem PNs geram 1 linha com colunas de PN vazias
 
-### 2. Adicionar campo `packageId` ao tipo PartNumber (`src/data/types.ts`)
-- Novo campo opcional `packageId?: string` em `PartNumber`
-- Permite vincular Part Numbers a um Pacote específico
+### 2. PackagesPage.tsx — Importação
+- Após criar os pacotes, verificar se cada linha tem coluna "PN" preenchida
+- Se sim, agrupar PNs pelo pacote (mesmo Source Package = mesmo packageId) e criar os PNs automaticamente via `addPartNumbers`
+- Evitar duplicar pacotes: linhas com mesmo `Source Package` geram 1 pacote + N PNs
 
-### 3. Adicionar seção de Part Numbers no formulário de criação de Pacote (`PackagesPage.tsx`)
-- Após os campos existentes do `PkgForm`, adicionar seção "Part Numbers"
-- Cada PN inline terá campos mínimos: **PN**, **ERA**, **Descrição**, **Fornecedor**, **Modal**
-- Botão "+ Adicionar Part Number" para inserir mais linhas dinamicamente
-- Botão "X" em cada linha para remover
-- Ao salvar o pacote, todos os PNs são criados automaticamente com o `packageId` e `projectId` do pacote
+### 3. PartNumbersPage.tsx — Importação
+- Após ler o arquivo, verificar a coluna "Pacote" ou "Source Package" de cada linha
+- Para cada valor único, buscar no `pkgList` se já existe um pacote com aquele `sourcePackageNumber`
+- Se existir: usar o `id` dele como `packageId` do PN
+- Se não existir: criar um pacote mínimo (com sourcePackageNumber e dados padrão) via `addPackage` e usar o novo `id`
 
-### 4. Adicionar coluna "Pacote" na tabela de Part Numbers (`PartNumbersPage.tsx`)
-- Nova coluna exibindo o `sourcePackageNumber` do pacote vinculado (ou "—" se não houver)
-- Lookup pelo `packageId` no contexto de dados
-
-### 5. Atualizar `PackagesPage.tsx` e `PartNumbersPage.tsx`
-- Substituir `useState` local por `useData()` do novo contexto
-- Manter toda a lógica de filtros, export/import e CRUD funcionando
-
-### 6. Atualizar mock data (`src/data/mockData.ts`)
-- Adicionar `packageId` aos Part Numbers existentes para manter consistência
+### 4. PartNumbersPage.tsx — Exportação
+- Já exporta coluna "Pacote" — sem mudanças necessárias
 
 ### Arquivos afetados
-- `src/data/types.ts` — adicionar `packageId`
-- `src/data/mockData.ts` — adicionar `packageId` nos mocks
-- `src/contexts/DataContext.tsx` — novo arquivo
-- `src/App.tsx` — envolver com `DataProvider`
-- `src/pages/PackagesPage.tsx` — formulário com PNs dinâmicos + usar contexto
-- `src/pages/PartNumbersPage.tsx` — coluna "Pacote" + usar contexto
-- `src/pages/ProjectDetailPage.tsx` — usar contexto
-- `src/pages/OverviewPage.tsx` — usar contexto (se referencia dados)
+- `src/pages/PackagesPage.tsx` — exportação explodida + importação com PNs
+- `src/pages/PartNumbersPage.tsx` — importação com criação automática de pacotes
 
