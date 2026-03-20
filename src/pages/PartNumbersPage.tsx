@@ -125,7 +125,7 @@ function formToPN(form: FormState, id: string, packageId?: string): PartNumber {
 }
 
 export default function PartNumbersPage() {
-  const { pnList, setPnList, pkgList } = useData();
+  const { pnList, setPnList, pkgList, addPackage } = useData();
   const { cancelPartNumber } = useCancelled();
   const [search, setSearch] = useState("");
   const [filterProject, setFilterProject] = useState("all");
