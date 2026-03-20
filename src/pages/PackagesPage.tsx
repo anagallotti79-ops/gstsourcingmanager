@@ -302,6 +302,22 @@ export default function PackagesPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Build exploded rows: each pkg repeated per linked PN (or once if no PNs)
+  const buildExplodedRows = (list: Package[]) => {
+    const rows: Record<string, unknown>[] = [];
+    for (const pkg of list) {
+      const linkedPNs = pnList.filter((pn) => pn.packageId === pkg.id);
+      if (linkedPNs.length === 0) {
+        rows.push({ ...pkg, _pn: "", _pnEra: "", _pnDesc: "", _fornecedor: "", _modal: "", _statusPO: "", _po: "" });
+      } else {
+        for (const pn of linkedPNs) {
+          rows.push({ ...pkg, _pn: pn.pn, _pnEra: pn.pnEra, _pnDesc: pn.description, _fornecedor: pn.fornecedor, _modal: pn.modal, _statusPO: pn.statusPO, _po: pn.po });
+        }
+      }
+    }
+    return rows;
+  };
+
   const pkgColumns: ExportColumn[] = [
     { header: "Source Package", accessor: (r) => String((r as unknown as Package).sourcePackageNumber) },
     { header: "Descrição", accessor: (r) => String((r as unknown as Package).description) },
@@ -320,15 +336,24 @@ export default function PackagesPage() {
     { header: "OTOP Target", accessor: (r) => String((r as unknown as Package).otop.target) },
     { header: "OTOP Done", accessor: (r) => String((r as unknown as Package).otop.done || "") },
     { header: "Comentários", accessor: (r) => String((r as unknown as Package).comments || "") },
+    { header: "PN", accessor: (r) => String((r as Record<string, unknown>)._pn || "") },
+    { header: "ERA", accessor: (r) => String((r as Record<string, unknown>)._pnEra || "") },
+    { header: "Descrição PN", accessor: (r) => String((r as Record<string, unknown>)._pnDesc || "") },
+    { header: "Fornecedor", accessor: (r) => String((r as Record<string, unknown>)._fornecedor || "") },
+    { header: "Modal", accessor: (r) => String((r as Record<string, unknown>)._modal || "") },
+    { header: "Status PO", accessor: (r) => String((r as Record<string, unknown>)._statusPO || "") },
+    { header: "PO", accessor: (r) => String((r as Record<string, unknown>)._po || "") },
   ];
 
   const handleExportExcel = () => {
-    exportToExcel(filtered as unknown as Record<string, unknown>[], pkgColumns, "pacotes");
+    const exploded = buildExplodedRows(filtered);
+    exportToExcel(exploded, pkgColumns, "pacotes");
     toast({ title: "Exportado com sucesso", description: `${filtered.length} pacotes exportados para Excel.` });
   };
 
   const handleExportPDF = () => {
-    exportToPDF(filtered as unknown as Record<string, unknown>[], pkgColumns, "pacotes", "Pacotes — Relatório");
+    const exploded = buildExplodedRows(filtered);
+    exportToPDF(exploded, pkgColumns, "pacotes", "Pacotes — Relatório");
     toast({ title: "Exportado com sucesso", description: `${filtered.length} pacotes exportados para PDF.` });
   };
 
