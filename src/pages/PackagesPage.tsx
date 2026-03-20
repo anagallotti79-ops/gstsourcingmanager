@@ -195,7 +195,7 @@ function formToPkg(form: FormState, id: string): Package {
 }
 
 export default function PackagesPage() {
-  const { pkgList, setPkgList, addPackage, addPartNumbers } = useData();
+  const { pkgList, setPkgList, pnList, addPackage, addPartNumbers } = useData();
   const [search, setSearch] = useState("");
   const [filterDM, setFilterDM] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
