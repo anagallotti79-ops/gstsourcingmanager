@@ -53,12 +53,23 @@ export default function ProjectDetailPage() {
   const phaseTargetData = phases
     .map((phase) => {
       const pkgsInPhase = projPackages.filter((p) => p.status === phase);
+      if (phase === "Closed") {
+        const latePkgs = pkgsInPhase.filter((p) => p.phaseTargetStatus === "Late").length;
+        const onTrackPkgs = pkgsInPhase.length - latePkgs;
+        return {
+          phase: "Closed",
+          "On Track": onTrackPkgs,
+          "At Risk": 0,
+          Late: latePkgs,
+          Closed: 0,
+        };
+      }
       return {
         phase: phase.length > 9 ? phase.slice(0, 9) + "…" : phase,
         "On Track": pkgsInPhase.filter((p) => p.phaseTargetStatus === "On Track").length,
         "At Risk": pkgsInPhase.filter((p) => p.phaseTargetStatus === "At Risk").length,
         Late: pkgsInPhase.filter((p) => p.phaseTargetStatus === "Late").length,
-        Closed: phase === "Closed" ? pkgsInPhase.length : 0,
+        Closed: 0,
       };
     })
     .filter((d) => d["On Track"] + d["At Risk"] + d.Late + d.Closed > 0);
