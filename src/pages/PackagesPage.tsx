@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { projects } from "@/data/mockData";
 import { useData } from "@/contexts/DataContext";
 import { useCancelled } from "@/contexts/CancelledContext";
-import { Package, PackageStatus, PhaseTargetStatus, DmDivision, PackageCategory, Modal, PartNumber } from "@/data/types";
+import { Package, PackageStatus, PhaseTargetStatus, DmDivision, PackageCategory, Modal, PartNumber, StatusPO, StatusRDA, StatusTPO } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
