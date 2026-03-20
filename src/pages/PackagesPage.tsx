@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { projects } from "@/data/mockData";
 import { useData } from "@/contexts/DataContext";
 import { useCancelled } from "@/contexts/CancelledContext";
-import { Package, PackageStatus, PhaseTargetStatus, DmDivision, PackageCategory, Modal, PartNumber } from "@/data/types";
+import { Package, PackageStatus, PhaseTargetStatus, DmDivision, PackageCategory, Modal, PartNumber, StatusPO, StatusRDA, StatusTPO } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -195,7 +195,7 @@ function formToPkg(form: FormState, id: string): Package {
 }
 
 export default function PackagesPage() {
-  const { pkgList, setPkgList, addPackage, addPartNumbers } = useData();
+  const { pkgList, setPkgList, pnList, addPackage, addPartNumbers } = useData();
   const [search, setSearch] = useState("");
   const [filterDM, setFilterDM] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -302,6 +302,22 @@ export default function PackagesPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Build exploded rows: each pkg repeated per linked PN (or once if no PNs)
+  const buildExplodedRows = (list: Package[]) => {
+    const rows: Record<string, unknown>[] = [];
+    for (const pkg of list) {
+      const linkedPNs = pnList.filter((pn) => pn.packageId === pkg.id);
+      if (linkedPNs.length === 0) {
+        rows.push({ ...pkg, _pn: "", _pnEra: "", _pnDesc: "", _fornecedor: "", _modal: "", _statusPO: "", _po: "" });
+      } else {
+        for (const pn of linkedPNs) {
+          rows.push({ ...pkg, _pn: pn.pn, _pnEra: pn.pnEra, _pnDesc: pn.description, _fornecedor: pn.fornecedor, _modal: pn.modal, _statusPO: pn.statusPO, _po: pn.po });
+        }
+      }
+    }
+    return rows;
+  };
+
   const pkgColumns: ExportColumn[] = [
     { header: "Source Package", accessor: (r) => String((r as unknown as Package).sourcePackageNumber) },
     { header: "Descrição", accessor: (r) => String((r as unknown as Package).description) },
@@ -320,15 +336,24 @@ export default function PackagesPage() {
     { header: "OTOP Target", accessor: (r) => String((r as unknown as Package).otop.target) },
     { header: "OTOP Done", accessor: (r) => String((r as unknown as Package).otop.done || "") },
     { header: "Comentários", accessor: (r) => String((r as unknown as Package).comments || "") },
+    { header: "PN", accessor: (r) => String((r as Record<string, unknown>)._pn || "") },
+    { header: "ERA", accessor: (r) => String((r as Record<string, unknown>)._pnEra || "") },
+    { header: "Descrição PN", accessor: (r) => String((r as Record<string, unknown>)._pnDesc || "") },
+    { header: "Fornecedor", accessor: (r) => String((r as Record<string, unknown>)._fornecedor || "") },
+    { header: "Modal", accessor: (r) => String((r as Record<string, unknown>)._modal || "") },
+    { header: "Status PO", accessor: (r) => String((r as Record<string, unknown>)._statusPO || "") },
+    { header: "PO", accessor: (r) => String((r as Record<string, unknown>)._po || "") },
   ];
 
   const handleExportExcel = () => {
-    exportToExcel(filtered as unknown as Record<string, unknown>[], pkgColumns, "pacotes");
+    const exploded = buildExplodedRows(filtered);
+    exportToExcel(exploded, pkgColumns, "pacotes");
     toast({ title: "Exportado com sucesso", description: `${filtered.length} pacotes exportados para Excel.` });
   };
 
   const handleExportPDF = () => {
-    exportToPDF(filtered as unknown as Record<string, unknown>[], pkgColumns, "pacotes", "Pacotes — Relatório");
+    const exploded = buildExplodedRows(filtered);
+    exportToPDF(exploded, pkgColumns, "pacotes", "Pacotes — Relatório");
     toast({ title: "Exportado com sucesso", description: `${filtered.length} pacotes exportados para PDF.` });
   };
 
@@ -337,27 +362,77 @@ export default function PackagesPage() {
     if (!file) return;
     try {
       const rows = await parseImportedFile(file);
-      const newPkgs: Package[] = rows.map((row, i) => ({
-        id: `pkg-imp-${Date.now()}-${i}`,
-        projectId: row["projectId"] || "proj-1",
-        sourcePackageNumber: row["Source Package"] || row["sourcePackageNumber"] || "TBD",
-        description: row["Descrição"] || row["description"] || "TBD",
-        ppm: row["PPM"] || row["ppm"] || "TBD",
-        pb: row["PB"] || row["pb"] || "TBD",
-        dmDivision: (row["DM Div."] || row["dmDivision"] || "DMCA") as DmDivision,
-        category: (row["Categoria"] || row["category"] || "SPF") as PackageCategory,
-        status: (row["Status"] || row["status"] || "Source Package") as PackageStatus,
-        phaseTargetStatus: (row["Target Status"] || row["phaseTargetStatus"] || "On Track") as PhaseTargetStatus,
-        createdDate: row["createdDate"] || new Date().toISOString().slice(0, 10),
-        totalDays: Number(row["Total Dias"] || row["totalDays"]) || 0,
-        recommendationPredictionDate: row["Data Previsão"] || row["recommendationPredictionDate"] || "TBD",
-        tko: { target: row["TKO Target"] || "TBD", done: row["TKO Done"] || undefined },
-        ot: { target: row["OT Target"] || "TBD", done: row["OT Done"] || undefined },
-        otop: { target: row["OTOP Target"] || "TBD", done: row["OTOP Done"] || undefined },
-        comments: row["Comentários"] || row["comments"] || "",
-      }));
+
+      // Group rows by Source Package to avoid duplicate packages
+      const grouped = new Map<string, { pkgRow: Record<string, string>; pnRows: Record<string, string>[] }>();
+      for (const row of rows) {
+        const spn = row["Source Package"] || row["sourcePackageNumber"] || "TBD";
+        if (!grouped.has(spn)) {
+          grouped.set(spn, { pkgRow: row, pnRows: [] });
+        }
+        // If row has PN data, collect it
+        const pnValue = row["PN"] || row["pn"] || "";
+        if (pnValue.trim()) {
+          grouped.get(spn)!.pnRows.push(row);
+        }
+      }
+
+      const newPkgs: Package[] = [];
+      const newPNs: PartNumber[] = [];
+      let pkgIdx = 0;
+
+      for (const [, { pkgRow, pnRows }] of grouped) {
+        const pkgId = `pkg-imp-${Date.now()}-${pkgIdx++}`;
+        newPkgs.push({
+          id: pkgId,
+          projectId: pkgRow["projectId"] || "proj-1",
+          sourcePackageNumber: pkgRow["Source Package"] || pkgRow["sourcePackageNumber"] || "TBD",
+          description: pkgRow["Descrição"] || pkgRow["description"] || "TBD",
+          ppm: pkgRow["PPM"] || pkgRow["ppm"] || "TBD",
+          pb: pkgRow["PB"] || pkgRow["pb"] || "TBD",
+          dmDivision: (pkgRow["DM Div."] || pkgRow["dmDivision"] || "DMCA") as DmDivision,
+          category: (pkgRow["Categoria"] || pkgRow["category"] || "SPF") as PackageCategory,
+          status: (pkgRow["Status"] || pkgRow["status"] || "Source Package") as PackageStatus,
+          phaseTargetStatus: (pkgRow["Target Status"] || pkgRow["phaseTargetStatus"] || "On Track") as PhaseTargetStatus,
+          createdDate: pkgRow["createdDate"] || new Date().toISOString().slice(0, 10),
+          totalDays: Number(pkgRow["Total Dias"] || pkgRow["totalDays"]) || 0,
+          recommendationPredictionDate: pkgRow["Data Previsão"] || pkgRow["recommendationPredictionDate"] || "TBD",
+          tko: { target: pkgRow["TKO Target"] || "TBD", done: pkgRow["TKO Done"] || undefined },
+          ot: { target: pkgRow["OT Target"] || "TBD", done: pkgRow["OT Done"] || undefined },
+          otop: { target: pkgRow["OTOP Target"] || "TBD", done: pkgRow["OTOP Done"] || undefined },
+          comments: pkgRow["Comentários"] || pkgRow["comments"] || "",
+        });
+
+        // Create linked PNs
+        for (let j = 0; j < pnRows.length; j++) {
+          const r = pnRows[j];
+          newPNs.push({
+            id: `pn-imp-${Date.now()}-${pkgIdx}-${j}`,
+            packageId: pkgId,
+            projectId: pkgRow["projectId"] || "proj-1",
+            pn: r["PN"] || r["pn"] || "TBD",
+            pnEra: r["ERA"] || r["pnEra"] || "TBD",
+            projeto: r["Projeto"] || r["projeto"] || "TBD",
+            description: r["Descrição PN"] || r["description"] || "TBD",
+            pb: pkgRow["PB"] || pkgRow["pb"] || "TBD",
+            fornecedor: r["Fornecedor"] || r["fornecedor"] || "TBD",
+            modal: (r["Modal"] || r["modal"] || "Nacional") as Modal,
+            statusPO: (r["Status PO"] || r["statusPO"] || "Pendente") as StatusPO,
+            po: r["PO"] || r["po"] || "",
+            previsaoEmissaoPO: r["Prev. PO"] || r["previsaoEmissaoPO"] || "TBD",
+            rda: r["RDA"] || r["rda"] || "",
+            statusRDA: (r["Status RDA"] || r["statusRDA"] || "NA") as StatusRDA,
+            tpo: r["TPO"] || r["tpo"] || "",
+            statusTPO: (r["Status TPO"] || r["statusTPO"] || "NA") as StatusTPO,
+            previsaoEmissaoTPO: r["Prev. TPO"] || r["previsaoEmissaoTPO"] || "",
+            comments: r["Comentários"] || r["comments"] || "",
+          });
+        }
+      }
+
       setPkgList((prev) => [...prev, ...newPkgs]);
-      toast({ title: "Importação concluída", description: `${newPkgs.length} pacotes importados.` });
+      if (newPNs.length > 0) addPartNumbers(newPNs);
+      toast({ title: "Importação concluída", description: `${newPkgs.length} pacotes${newPNs.length > 0 ? ` e ${newPNs.length} part numbers` : ""} importados.` });
     } catch {
       toast({ title: "Erro na importação", description: "Não foi possível ler o arquivo.", variant: "destructive" });
     }

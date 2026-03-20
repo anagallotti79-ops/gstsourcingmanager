@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { projects } from "@/data/mockData";
 import { useData } from "@/contexts/DataContext";
 import { useCancelled } from "@/contexts/CancelledContext";
-import { PartNumber, Modal, StatusPO, StatusRDA, StatusTPO } from "@/data/types";
+import { PartNumber, Modal, StatusPO, StatusRDA, StatusTPO, Package, DmDivision, PackageCategory, PackageStatus, PhaseTargetStatus } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -125,7 +125,7 @@ function formToPN(form: FormState, id: string, packageId?: string): PartNumber {
 }
 
 export default function PartNumbersPage() {
-  const { pnList, setPnList, pkgList } = useData();
+  const { pnList, setPnList, pkgList, addPackage } = useData();
   const { cancelPartNumber } = useCancelled();
   const [search, setSearch] = useState("");
   const [filterProject, setFilterProject] = useState("all");
@@ -238,28 +238,68 @@ export default function PartNumbersPage() {
     if (!file) return;
     try {
       const rows = await parseImportedFile(file);
-      const newPNs: PartNumber[] = rows.map((row, i) => ({
-        id: `pn-imp-${Date.now()}-${i}`,
-        projectId: row["projectId"] || "proj-1",
-        pn: row["PN"] || row["pn"] || "TBD",
-        pnEra: row["ERA"] || row["pnEra"] || "TBD",
-        projeto: row["Projeto"] || row["projeto"] || "TBD",
-        description: row["Descrição"] || row["description"] || "TBD",
-        pb: row["PB"] || row["pb"] || "TBD",
-        fornecedor: row["Fornecedor"] || row["fornecedor"] || "TBD",
-        modal: (row["Modal"] || row["modal"] || "Nacional") as Modal,
-        statusPO: (row["Status PO"] || row["statusPO"] || "Pendente") as StatusPO,
-        po: row["PO"] || row["po"] || "",
-        previsaoEmissaoPO: row["Prev. PO"] || row["previsaoEmissaoPO"] || "TBD",
-        rda: row["RDA"] || row["rda"] || "",
-        statusRDA: (row["Status RDA"] || row["statusRDA"] || "NA") as StatusRDA,
-        tpo: row["TPO"] || row["tpo"] || "",
-        statusTPO: (row["Status TPO"] || row["statusTPO"] || "NA") as StatusTPO,
-        previsaoEmissaoTPO: row["Prev. TPO"] || row["previsaoEmissaoTPO"] || "",
-        comments: row["Comentários"] || row["comments"] || "",
-      }));
+      let packagesCreated = 0;
+
+      // Track newly created packages within this import
+      const createdPkgMap = new Map<string, string>(); // sourcePackageNumber -> id
+
+      const newPNs: PartNumber[] = rows.map((row, i) => {
+        const pacoteName = row["Pacote"] || row["Source Package"] || "";
+        let packageId: string | undefined;
+
+        if (pacoteName.trim()) {
+          // Check existing packages
+          const existing = pkgList.find((p) => p.sourcePackageNumber === pacoteName);
+          if (existing) {
+            packageId = existing.id;
+          } else if (createdPkgMap.has(pacoteName)) {
+            packageId = createdPkgMap.get(pacoteName);
+          } else {
+            // Create skeleton package
+            const newPkgId = `pkg-auto-${Date.now()}-${i}`;
+            addPackage({
+              id: newPkgId,
+              projectId: row["projectId"] || "proj-1",
+              sourcePackageNumber: pacoteName,
+              description: "Pacote criado automaticamente via importação de PNs",
+              ppm: "TBD", pb: row["PB"] || row["pb"] || "TBD",
+              dmDivision: "DMCA" as DmDivision, category: "SPF" as PackageCategory,
+              status: "Source Package" as PackageStatus, phaseTargetStatus: "On Track" as PhaseTargetStatus,
+              createdDate: new Date().toISOString().slice(0, 10), totalDays: 0,
+              recommendationPredictionDate: "TBD",
+              tko: { target: "TBD" }, ot: { target: "TBD" }, otop: { target: "TBD" },
+            });
+            createdPkgMap.set(pacoteName, newPkgId);
+            packageId = newPkgId;
+            packagesCreated++;
+          }
+        }
+
+        return {
+          id: `pn-imp-${Date.now()}-${i}`,
+          projectId: row["projectId"] || "proj-1",
+          packageId,
+          pn: row["PN"] || row["pn"] || "TBD",
+          pnEra: row["ERA"] || row["pnEra"] || "TBD",
+          projeto: row["Projeto"] || row["projeto"] || "TBD",
+          description: row["Descrição"] || row["description"] || "TBD",
+          pb: row["PB"] || row["pb"] || "TBD",
+          fornecedor: row["Fornecedor"] || row["fornecedor"] || "TBD",
+          modal: (row["Modal"] || row["modal"] || "Nacional") as Modal,
+          statusPO: (row["Status PO"] || row["statusPO"] || "Pendente") as StatusPO,
+          po: row["PO"] || row["po"] || "",
+          previsaoEmissaoPO: row["Prev. PO"] || row["previsaoEmissaoPO"] || "TBD",
+          rda: row["RDA"] || row["rda"] || "",
+          statusRDA: (row["Status RDA"] || row["statusRDA"] || "NA") as StatusRDA,
+          tpo: row["TPO"] || row["tpo"] || "",
+          statusTPO: (row["Status TPO"] || row["statusTPO"] || "NA") as StatusTPO,
+          previsaoEmissaoTPO: row["Prev. TPO"] || row["previsaoEmissaoTPO"] || "",
+          comments: row["Comentários"] || row["comments"] || "",
+        };
+      });
       setPnList((prev) => [...prev, ...newPNs]);
-      toast({ title: "Importação concluída", description: `${newPNs.length} part numbers importados.` });
+      const desc = `${newPNs.length} part numbers importados${packagesCreated > 0 ? ` e ${packagesCreated} pacotes criados automaticamente` : ""}.`;
+      toast({ title: "Importação concluída", description: desc });
     } catch {
       toast({ title: "Erro na importação", description: "Não foi possível ler o arquivo.", variant: "destructive" });
     }
