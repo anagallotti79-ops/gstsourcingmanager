@@ -1,8 +1,13 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 export function AppLayout() {
+  const { profile, signOut } = useAuth();
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -13,6 +18,16 @@ export function AppLayout() {
             <span className="ml-4 text-sm font-medium text-muted-foreground">
               GST Sourcing Manager
             </span>
+            <div className="ml-auto flex items-center gap-3">
+              {profile && (
+                <span className="text-sm text-muted-foreground">
+                  {profile.nome || profile.email}
+                </span>
+              )}
+              <Button variant="ghost" size="icon" onClick={signOut} title="Sair">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </header>
           <main className="flex-1 overflow-auto p-6">
             <Outlet />
