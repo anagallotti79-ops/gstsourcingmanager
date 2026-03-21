@@ -1,35 +1,53 @@
 
 
-# Correlacionar Pacotes ↔ Part Numbers na Exportação e Importação
+# Sistema de Login/Cadastro — GST Sourcing Manager
 
 ## Resumo
-Atualizar a lógica de exportação e importação para que:
-- **Exportação de Pacotes**: inclua colunas dos PNs vinculados (cada PN em uma linha separada, repetindo dados do pacote)
-- **Exportação de PNs**: inclua coluna "Pacote" (sourcePackageNumber) — já existe
-- **Importação de Pacotes**: linhas que contenham dados de PN (coluna "PN" preenchida) criam automaticamente os PNs na aba de Part Numbers
-- **Importação de PNs**: verifica se o pacote (coluna "Pacote" ou "Source Package") já existe na lista; se não existir, cria o pacote automaticamente na aba de Pacotes
+Adicionar autenticação com Supabase (email/senha), incluindo páginas de Login, Cadastro e Recuperação de Senha. Rotas protegidas redirecionam para login. Perfil do funcionário armazenado em tabela `profiles` (nome, email, área).
+
+## Pré-requisito
+- Ativar **Lovable Cloud** (Supabase integrado) para ter banco de dados e autenticação
 
 ## Mudanças
 
-### 1. PackagesPage.tsx — Exportação
-- Alterar `pkgColumns` e `handleExportExcel`/`handleExportPDF` para exportar dados "explodidos": cada pacote gera N linhas (uma por PN vinculado), com colunas do pacote + colunas do PN (PN, ERA, Descrição PN, Fornecedor, Modal, Status PO, PO, etc.)
-- Pacotes sem PNs geram 1 linha com colunas de PN vazias
+### 1. Habilitar Lovable Cloud / Supabase
+- Criar cliente Supabase (`src/integrations/supabase/client.ts`)
 
-### 2. PackagesPage.tsx — Importação
-- Após criar os pacotes, verificar se cada linha tem coluna "PN" preenchida
-- Se sim, agrupar PNs pelo pacote (mesmo Source Package = mesmo packageId) e criar os PNs automaticamente via `addPartNumbers`
-- Evitar duplicar pacotes: linhas com mesmo `Source Package` geram 1 pacote + N PNs
+### 2. Banco de dados — Migrations
+- **Tabela `profiles`**: `id (uuid FK auth.users)`, `nome (text)`, `email (text)`, `area (text)`, `created_at`
+- Trigger `on_auth_user_created` para criar perfil automaticamente no signup
+- RLS: usuário lê/atualiza apenas seu próprio perfil
 
-### 3. PartNumbersPage.tsx — Importação
-- Após ler o arquivo, verificar a coluna "Pacote" ou "Source Package" de cada linha
-- Para cada valor único, buscar no `pkgList` se já existe um pacote com aquele `sourcePackageNumber`
-- Se existir: usar o `id` dele como `packageId` do PN
-- Se não existir: criar um pacote mínimo (com sourcePackageNumber e dados padrão) via `addPackage` e usar o novo `id`
+### 3. Contexto de autenticação (`src/contexts/AuthContext.tsx`)
+- Provider com `user`, `profile`, `loading`, `signIn`, `signUp`, `signOut`
+- Listener `onAuthStateChange` + fetch do perfil na tabela `profiles`
 
-### 4. PartNumbersPage.tsx — Exportação
-- Já exporta coluna "Pacote" — sem mudanças necessárias
+### 4. Páginas de autenticação
+- **`src/pages/LoginPage.tsx`** — formulário email/senha com título "GST Sourcing Manager", link para cadastro e recuperação de senha
+- **`src/pages/SignUpPage.tsx`** — formulário com nome, email, área, senha; chama `signUp` + insere perfil
+- **`src/pages/ResetPasswordPage.tsx`** — formulário para definir nova senha (rota `/reset-password`)
+- Estilo escuro consistente com o tema atual (fundo `--background`, botão `--primary` verde)
+
+### 5. Rota protegida (`src/components/ProtectedRoute.tsx`)
+- Redireciona para `/login` se não autenticado
+- Mostra loading enquanto verifica sessão
+
+### 6. Atualizar roteamento (`src/App.tsx`)
+- Rotas públicas: `/login`, `/cadastro`, `/reset-password`
+- Todas as rotas existentes envolvidas com `ProtectedRoute`
+
+### 7. Header com usuário logado (`src/components/AppLayout.tsx`)
+- Exibir nome do funcionário no header
+- Botão de logout
 
 ### Arquivos afetados
-- `src/pages/PackagesPage.tsx` — exportação explodida + importação com PNs
-- `src/pages/PartNumbersPage.tsx` — importação com criação automática de pacotes
+- `src/integrations/supabase/client.ts` — novo
+- `src/contexts/AuthContext.tsx` — novo
+- `src/components/ProtectedRoute.tsx` — novo
+- `src/pages/LoginPage.tsx` — novo
+- `src/pages/SignUpPage.tsx` — novo
+- `src/pages/ResetPasswordPage.tsx` — novo
+- `src/App.tsx` — rotas atualizadas
+- `src/components/AppLayout.tsx` — nome do usuário + logout
+- 1 migration SQL — tabela profiles + trigger + RLS
 
