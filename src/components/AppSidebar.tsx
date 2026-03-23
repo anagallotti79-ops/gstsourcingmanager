@@ -19,6 +19,7 @@ const menuItems = [
   { title: "Pacotes", url: "/pacotes", icon: Package },
   { title: "Part Numbers", url: "/part-numbers", icon: Hash },
   { title: "Cancelados", url: "/cancelados", icon: Ban },
+  { title: "Perfil", url: "/perfil", icon: User },
 ];
 
 export function AppSidebar() {

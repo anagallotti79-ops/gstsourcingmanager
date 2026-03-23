@@ -48,6 +48,7 @@ const App = () => (
                   <Route path="/pacotes" element={<PackagesPage />} />
                   <Route path="/part-numbers" element={<PartNumbersPage />} />
                   <Route path="/cancelados" element={<CancelledPage />} />
+                  <Route path="/perfil" element={<ProfilePage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
