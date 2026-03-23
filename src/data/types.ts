@@ -61,5 +61,8 @@ export interface PartNumber {
   tpo: string;
   statusTPO: StatusTPO;
   previsaoEmissaoTPO: string;
+  tko: DateField;
+  ot: DateField;
+  otop: DateField;
   comments?: string;
 }
