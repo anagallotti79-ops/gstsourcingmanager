@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Hash, Ban, Settings } from "lucide-react";
+import { LayoutDashboard, Package, Hash, Ban, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -19,6 +19,7 @@ const menuItems = [
   { title: "Pacotes", url: "/pacotes", icon: Package },
   { title: "Part Numbers", url: "/part-numbers", icon: Hash },
   { title: "Cancelados", url: "/cancelados", icon: Ban },
+  { title: "Perfil", url: "/perfil", icon: User },
 ];
 
 export function AppSidebar() {

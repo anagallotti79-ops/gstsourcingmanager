@@ -13,6 +13,7 @@ import ProjectDetailPage from "@/pages/ProjectDetailPage";
 import PackagesPage from "@/pages/PackagesPage";
 import PartNumbersPage from "@/pages/PartNumbersPage";
 import CancelledPage from "@/pages/CancelledPage";
+import ProfilePage from "@/pages/ProfilePage";
 import LoginPage from "@/pages/LoginPage";
 import SignUpPage from "@/pages/SignUpPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
@@ -47,6 +48,7 @@ const App = () => (
                   <Route path="/pacotes" element={<PackagesPage />} />
                   <Route path="/part-numbers" element={<PartNumbersPage />} />
                   <Route path="/cancelados" element={<CancelledPage />} />
+                  <Route path="/perfil" element={<ProfilePage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
