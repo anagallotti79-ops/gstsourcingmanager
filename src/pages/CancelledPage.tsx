@@ -53,7 +53,7 @@ export default function CancelledPage() {
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-card z-10">
                     <tr className="border-b border-border">
-                      {["Source Package", "Descrição", "PPM", "PB", "DM Div.", "Cat.", "Status", "Target Status", "Sem. Total", "Sem. Previsão", "Data Previsão", "TKO", "OT", "OTOP", "Data Cancelamento"].map((h) => (
+                      {["Source Package", "Descrição", "PPM", "PB", "DM Div.", "Cat.", "Status", "Target Status", "Sem. Total", "Sem. Previsão", "Data Previsão", "Data Cancelamento"].map((h) => (
                         <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -74,9 +74,6 @@ export default function CancelledPage() {
                             <td className="p-3 text-muted-foreground">{calculateWeeks(pkg.totalDays)}</td>
                             <td className="p-3 text-muted-foreground">{calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate)}</td>
                             <td className="p-3 text-muted-foreground whitespace-nowrap">{formatDate(pkg.recommendationPredictionDate)}</td>
-                            <td className="p-3 whitespace-nowrap"><DateCell field={pkg.tko} /></td>
-                            <td className="p-3 whitespace-nowrap"><DateCell field={pkg.ot} /></td>
-                            <td className="p-3 whitespace-nowrap"><DateCell field={pkg.otop} /></td>
                             <td className="p-3 text-warning whitespace-nowrap font-medium">{formatDate(pkg.cancelledDate)}</td>
                           </tr>
                         </ContextMenuTrigger>
@@ -88,7 +85,7 @@ export default function CancelledPage() {
                       </ContextMenu>
                     ))}
                     {cancelledPackages.length === 0 && (
-                      <tr><td colSpan={15} className="p-8 text-center text-muted-foreground">Nenhum pacote cancelado</td></tr>
+                      <tr><td colSpan={12} className="p-8 text-center text-muted-foreground">Nenhum pacote cancelado</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -104,7 +101,7 @@ export default function CancelledPage() {
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-card z-10">
                     <tr className="border-b border-border">
-                      {["PN", "ERA", "Projeto", "Descrição", "PB", "Fornecedor", "Modal", "Status PO", "PO", "Prev. PO", "RDA", "Status RDA", "TPO", "Status TPO", "Prev. TPO", "Data Cancelamento"].map((h) => (
+                      {["PN", "ERA", "Projeto", "Descrição", "PB", "Fornecedor", "Modal", "TKO", "OT", "OTOP", "Status PO", "PO", "Prev. PO", "RDA", "Status RDA", "TPO", "Status TPO", "Prev. TPO", "Data Cancelamento"].map((h) => (
                         <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -121,6 +118,9 @@ export default function CancelledPage() {
                             <td className="p-3 text-muted-foreground">{pn.pb}</td>
                             <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.fornecedor}</td>
                             <td className="p-3"><Badge variant="outline" className="text-[10px]">{pn.modal}</Badge></td>
+                            <td className="p-3 whitespace-nowrap"><DateCell field={pn.tko} /></td>
+                            <td className="p-3 whitespace-nowrap"><DateCell field={pn.ot} /></td>
+                            <td className="p-3 whitespace-nowrap"><DateCell field={pn.otop} /></td>
                             <td className="p-3">{statusPOBadge(pn.statusPO)}</td>
                             <td className="p-3 text-muted-foreground">{pn.po || "—"}</td>
                             <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.previsaoEmissaoPO || "—"}</td>
@@ -140,7 +140,7 @@ export default function CancelledPage() {
                       </ContextMenu>
                     ))}
                     {cancelledPartNumbers.length === 0 && (
-                      <tr><td colSpan={16} className="p-8 text-center text-muted-foreground">Nenhum part number cancelado</td></tr>
+                      <tr><td colSpan={19} className="p-8 text-center text-muted-foreground">Nenhum part number cancelado</td></tr>
                     )}
                   </tbody>
                 </table>
