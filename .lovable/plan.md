@@ -1,53 +1,41 @@
 
 
-# Sistema de Login/Cadastro — GST Sourcing Manager
+# Página de Perfil + Sistema de Admin
 
 ## Resumo
-Adicionar autenticação com Supabase (email/senha), incluindo páginas de Login, Cadastro e Recuperação de Senha. Rotas protegidas redirecionam para login. Perfil do funcionário armazenado em tabela `profiles` (nome, email, área).
-
-## Pré-requisito
-- Ativar **Lovable Cloud** (Supabase integrado) para ter banco de dados e autenticação
+Criar página de perfil para edição de nome, área e senha. Adicionar sistema de roles (admin) com tabela `user_roles` seguindo as melhores práticas de segurança.
 
 ## Mudanças
 
-### 1. Habilitar Lovable Cloud / Supabase
-- Criar cliente Supabase (`src/integrations/supabase/client.ts`)
+### 1. Migration — Tabela `user_roles` + função `has_role`
+- Criar enum `app_role` com valores `admin`, `user`
+- Criar tabela `user_roles` (`user_id`, `role`) com RLS
+- Criar função `has_role()` (SECURITY DEFINER) para verificar roles sem recursão
+- Política: usuários autenticados podem ler suas próprias roles
+- Admins podem ler todas as roles (via `has_role`)
 
-### 2. Banco de dados — Migrations
-- **Tabela `profiles`**: `id (uuid FK auth.users)`, `nome (text)`, `email (text)`, `area (text)`, `created_at`
-- Trigger `on_auth_user_created` para criar perfil automaticamente no signup
-- RLS: usuário lê/atualiza apenas seu próprio perfil
+### 2. Nova página `ProfilePage.tsx` (`/perfil`)
+- Formulário com campos: Nome, Área (pré-preenchidos do perfil atual)
+- Seção separada para alteração de senha (senha atual não necessária via Supabase `updateUser`)
+- Botão salvar que faz `supabase.from('profiles').update(...)` + `supabase.auth.updateUser({ password })`
 
-### 3. Contexto de autenticação (`src/contexts/AuthContext.tsx`)
-- Provider com `user`, `profile`, `loading`, `signIn`, `signUp`, `signOut`
-- Listener `onAuthStateChange` + fetch do perfil na tabela `profiles`
+### 3. Atualizar `AuthContext.tsx`
+- Adicionar campo `isAdmin` ao contexto
+- Buscar role do usuário na tabela `user_roles` após login
+- Expor `isAdmin` para uso nos componentes
 
-### 4. Páginas de autenticação
-- **`src/pages/LoginPage.tsx`** — formulário email/senha com título "GST Sourcing Manager", link para cadastro e recuperação de senha
-- **`src/pages/SignUpPage.tsx`** — formulário com nome, email, área, senha; chama `signUp` + insere perfil
-- **`src/pages/ResetPasswordPage.tsx`** — formulário para definir nova senha (rota `/reset-password`)
-- Estilo escuro consistente com o tema atual (fundo `--background`, botão `--primary` verde)
+### 4. Atualizar navegação
+- Adicionar link "Perfil" no sidebar (`AppSidebar.tsx`) com ícone User
+- Adicionar rota `/perfil` no `App.tsx`
 
-### 5. Rota protegida (`src/components/ProtectedRoute.tsx`)
-- Redireciona para `/login` se não autenticado
-- Mostra loading enquanto verifica sessão
-
-### 6. Atualizar roteamento (`src/App.tsx`)
-- Rotas públicas: `/login`, `/cadastro`, `/reset-password`
-- Todas as rotas existentes envolvidas com `ProtectedRoute`
-
-### 7. Header com usuário logado (`src/components/AppLayout.tsx`)
-- Exibir nome do funcionário no header
-- Botão de logout
+### 5. Painel Admin (visível apenas para admins)
+- Seção na página de perfil ou link no sidebar (apenas se admin)
+- Listar usuários cadastrados e permitir atribuir/remover role admin
 
 ### Arquivos afetados
-- `src/integrations/supabase/client.ts` — novo
-- `src/contexts/AuthContext.tsx` — novo
-- `src/components/ProtectedRoute.tsx` — novo
-- `src/pages/LoginPage.tsx` — novo
-- `src/pages/SignUpPage.tsx` — novo
-- `src/pages/ResetPasswordPage.tsx` — novo
-- `src/App.tsx` — rotas atualizadas
-- `src/components/AppLayout.tsx` — nome do usuário + logout
-- 1 migration SQL — tabela profiles + trigger + RLS
+- 1 migration SQL (user_roles + has_role + RLS)
+- `src/pages/ProfilePage.tsx` — novo
+- `src/contexts/AuthContext.tsx` — adicionar isAdmin
+- `src/components/AppSidebar.tsx` — link Perfil
+- `src/App.tsx` — rota /perfil
 
