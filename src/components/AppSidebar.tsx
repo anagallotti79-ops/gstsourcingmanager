@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Hash, Ban, Settings } from "lucide-react";
+import { LayoutDashboard, Package, Hash, Ban, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
