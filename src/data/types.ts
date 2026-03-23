@@ -39,9 +39,6 @@ export interface Package {
   createdDate: string;
   totalDays: number;
   recommendationPredictionDate: string;
-  tko: DateField;
-  ot: DateField;
-  otop: DateField;
   comments?: string;
 }
 
