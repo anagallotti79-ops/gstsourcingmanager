@@ -8,8 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus, CheckCircle2, AlertTriangle, XCircle, FileSpreadsheet, FileText, Upload, Trash2 } from "lucide-react";
-import { formatDate, calculateWeeks, calculatePredictionWeeks, getDateStatus } from "@/lib/dateUtils";
-import type { DateField } from "@/data/types";
+import { formatDate, calculateWeeks, calculatePredictionWeeks } from "@/lib/dateUtils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,22 +20,11 @@ import {
 import { exportToExcel, exportToPDF, parseImportedFile, type ExportColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
 
-function DateCell({ field }: { field: DateField }) {
-  const status = getDateStatus(field);
-  const dateStr = field.done || field.target;
-  const colorClass =
-    status === "done" ? "text-success" :
-    status === "late" ? "text-destructive" :
-    "text-muted-foreground";
-  return <span className={`text-xs font-medium ${colorClass}`}>{formatDate(dateStr)}</span>;
-}
-
 const blankForm = {
   projectId: "", sourcePackageNumber: "", description: "", ppm: "", pb: "",
   dmDivision: "DMCA" as DmDivision, category: "SPF" as PackageCategory,
   status: "Source Package" as PackageStatus, phaseTargetStatus: "On Track" as PhaseTargetStatus,
   createdDate: "", totalDays: "", recommendationPredictionDate: "",
-  tkoTarget: "", tkoDone: "", otTarget: "", otDone: "", otopTarget: "", otopDone: "",
   comments: "",
 };
 
@@ -89,12 +77,6 @@ function PkgForm({ form, setForm }: { form: FormState; setForm: React.Dispatch<R
       {f("createdDate", "Data de Criação (AAAA-MM-DD)", "2025-01-01")}
       {f("totalDays", "Total de Dias", "90")}
       {f("recommendationPredictionDate", "Previsão Recommendation (AAAA-MM-DD)", "2025-12-01")}
-      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">TKO</p>
-      {f("tkoTarget", "TKO - Target (AAAA-MM-DD)")} {f("tkoDone", "TKO - Done (AAAA-MM-DD)")}
-      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OT</p>
-      {f("otTarget", "OT - Target (AAAA-MM-DD)")} {f("otDone", "OT - Done (AAAA-MM-DD)")}
-      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OTOP</p>
-      {f("otopTarget", "OTOP - Target (AAAA-MM-DD)")} {f("otopDone", "OTOP - Done (AAAA-MM-DD)")}
       <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">Comentários</p>
       <div>
         <label className="text-sm font-medium text-foreground mb-1 block">Comentários</label>
@@ -170,9 +152,6 @@ function pkgToForm(pkg: Package): FormState {
     phaseTargetStatus: pkg.phaseTargetStatus,
     createdDate: pkg.createdDate, totalDays: String(pkg.totalDays),
     recommendationPredictionDate: pkg.recommendationPredictionDate,
-    tkoTarget: pkg.tko.target, tkoDone: pkg.tko.done || "",
-    otTarget: pkg.ot.target, otDone: pkg.ot.done || "",
-    otopTarget: pkg.otop.target, otopDone: pkg.otop.done || "",
     comments: pkg.comments || "",
   };
 }
@@ -187,9 +166,6 @@ function formToPkg(form: FormState, id: string): Package {
     createdDate: form.createdDate || new Date().toISOString().slice(0, 10),
     totalDays: Number(form.totalDays) || 0,
     recommendationPredictionDate: form.recommendationPredictionDate || "TBD",
-    tko: { target: form.tkoTarget || "TBD", done: form.tkoDone || undefined },
-    ot: { target: form.otTarget || "TBD", done: form.otDone || undefined },
-    otop: { target: form.otopTarget || "TBD", done: form.otopDone || undefined },
     comments: form.comments || "",
   };
 }
@@ -201,19 +177,16 @@ export default function PackagesPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterProject, setFilterProject] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
-  const { cancelPackage, cancelledPackages, restorePackage } = useCancelled();
+  const { cancelPackage } = useCancelled();
 
-  // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<FormState>(blankForm);
   const [createPNRows, setCreatePNRows] = useState<InlinePNForm[]>([]);
 
-  // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<FormState>(blankForm);
   const [editId, setEditId] = useState<string | null>(null);
 
-  // Delete confirm dialog
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -243,7 +216,6 @@ export default function PackagesPage() {
     const newPkg = formToPkg(createForm, pkgId);
     addPackage(newPkg);
 
-    // Create linked part numbers
     const validPNs = createPNRows.filter((r) => r.pn.trim());
     if (validPNs.length > 0) {
       const proj = projects.find((p) => p.id === createForm.projectId);
@@ -266,6 +238,9 @@ export default function PackagesPage() {
         tpo: "",
         statusTPO: "NA",
         previsaoEmissaoTPO: "",
+        tko: { target: "TBD" },
+        ot: { target: "TBD" },
+        otop: { target: "TBD" },
       }));
       addPartNumbers(newPNs);
     }
@@ -302,7 +277,6 @@ export default function PackagesPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Build exploded rows: each pkg repeated per linked PN (or once if no PNs)
   const buildExplodedRows = (list: Package[]) => {
     const rows: Record<string, unknown>[] = [];
     for (const pkg of list) {
@@ -329,12 +303,6 @@ export default function PackagesPage() {
     { header: "Target Status", accessor: (r) => String((r as unknown as Package).phaseTargetStatus) },
     { header: "Total Dias", accessor: (r) => String((r as unknown as Package).totalDays) },
     { header: "Data Previsão", accessor: (r) => String((r as unknown as Package).recommendationPredictionDate) },
-    { header: "TKO Target", accessor: (r) => String((r as unknown as Package).tko.target) },
-    { header: "TKO Done", accessor: (r) => String((r as unknown as Package).tko.done || "") },
-    { header: "OT Target", accessor: (r) => String((r as unknown as Package).ot.target) },
-    { header: "OT Done", accessor: (r) => String((r as unknown as Package).ot.done || "") },
-    { header: "OTOP Target", accessor: (r) => String((r as unknown as Package).otop.target) },
-    { header: "OTOP Done", accessor: (r) => String((r as unknown as Package).otop.done || "") },
     { header: "Comentários", accessor: (r) => String((r as unknown as Package).comments || "") },
     { header: "PN", accessor: (r) => String((r as Record<string, unknown>)._pn || "") },
     { header: "ERA", accessor: (r) => String((r as Record<string, unknown>)._pnEra || "") },
@@ -363,14 +331,12 @@ export default function PackagesPage() {
     try {
       const rows = await parseImportedFile(file);
 
-      // Group rows by Source Package to avoid duplicate packages
       const grouped = new Map<string, { pkgRow: Record<string, string>; pnRows: Record<string, string>[] }>();
       for (const row of rows) {
         const spn = row["Source Package"] || row["sourcePackageNumber"] || "TBD";
         if (!grouped.has(spn)) {
           grouped.set(spn, { pkgRow: row, pnRows: [] });
         }
-        // If row has PN data, collect it
         const pnValue = row["PN"] || row["pn"] || "";
         if (pnValue.trim()) {
           grouped.get(spn)!.pnRows.push(row);
@@ -397,13 +363,9 @@ export default function PackagesPage() {
           createdDate: pkgRow["createdDate"] || new Date().toISOString().slice(0, 10),
           totalDays: Number(pkgRow["Total Dias"] || pkgRow["totalDays"]) || 0,
           recommendationPredictionDate: pkgRow["Data Previsão"] || pkgRow["recommendationPredictionDate"] || "TBD",
-          tko: { target: pkgRow["TKO Target"] || "TBD", done: pkgRow["TKO Done"] || undefined },
-          ot: { target: pkgRow["OT Target"] || "TBD", done: pkgRow["OT Done"] || undefined },
-          otop: { target: pkgRow["OTOP Target"] || "TBD", done: pkgRow["OTOP Done"] || undefined },
           comments: pkgRow["Comentários"] || pkgRow["comments"] || "",
         });
 
-        // Create linked PNs
         for (let j = 0; j < pnRows.length; j++) {
           const r = pnRows[j];
           newPNs.push({
@@ -426,6 +388,9 @@ export default function PackagesPage() {
             statusTPO: (r["Status TPO"] || r["statusTPO"] || "NA") as StatusTPO,
             previsaoEmissaoTPO: r["Prev. TPO"] || r["previsaoEmissaoTPO"] || "",
             comments: r["Comentários"] || r["comments"] || "",
+            tko: { target: r["TKO Target"] || "TBD", done: r["TKO Done"] || undefined },
+            ot: { target: r["OT Target"] || "TBD", done: r["OT Done"] || undefined },
+            otop: { target: r["OTOP Target"] || "TBD", done: r["OTOP Done"] || undefined },
           });
         }
       }
@@ -554,7 +519,7 @@ export default function PackagesPage() {
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border">
-                  {["Source Package", "Descrição", "PPM", "PB", "DM Div.", "Cat.", "Status", "Target Status", "Sem. Total", "Sem. Previsão", "Data Previsão", "TKO", "OT", "OTOP", "Comentários"].map((h) => (
+                  {["Source Package", "Descrição", "PPM", "PB", "DM Div.", "Cat.", "Status", "Target Status", "Sem. Total", "Sem. Previsão", "Data Previsão", "Comentários"].map((h) => (
                     <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -575,9 +540,6 @@ export default function PackagesPage() {
                         <td className="p-3 text-muted-foreground">{calculateWeeks(pkg.totalDays)}</td>
                         <td className="p-3 text-muted-foreground">{calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate)}</td>
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{formatDate(pkg.recommendationPredictionDate)}</td>
-                        <td className="p-3 whitespace-nowrap"><DateCell field={pkg.tko} /></td>
-                        <td className="p-3 whitespace-nowrap"><DateCell field={pkg.ot} /></td>
-                        <td className="p-3 whitespace-nowrap"><DateCell field={pkg.otop} /></td>
                         <td className="p-3 text-muted-foreground max-w-[160px]">
                           {pkg.comments
                             ? <span title={pkg.comments} className="block truncate max-w-[140px] cursor-help">{pkg.comments}</span>
@@ -601,7 +563,7 @@ export default function PackagesPage() {
                   </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={15} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
+                  <tr><td colSpan={12} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
                 )}
               </tbody>
             </table>

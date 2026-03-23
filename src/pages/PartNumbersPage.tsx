@@ -3,6 +3,7 @@ import { projects } from "@/data/mockData";
 import { useData } from "@/contexts/DataContext";
 import { useCancelled } from "@/contexts/CancelledContext";
 import { PartNumber, Modal, StatusPO, StatusRDA, StatusTPO, Package, DmDivision, PackageCategory, PackageStatus, PhaseTargetStatus } from "@/data/types";
+import type { DateField } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,17 @@ import {
 } from "@/components/ui/context-menu";
 import { exportToExcel, exportToPDF, parseImportedFile, type ExportColumn } from "@/lib/exportUtils";
 import { useToast } from "@/hooks/use-toast";
+import { formatDate, getDateStatus } from "@/lib/dateUtils";
+
+function DateCell({ field }: { field: DateField }) {
+  const status = getDateStatus(field);
+  const dateStr = field.done || field.target;
+  const colorClass =
+    status === "done" ? "text-success" :
+    status === "late" ? "text-destructive" :
+    "text-muted-foreground";
+  return <span className={`text-xs font-medium ${colorClass}`}>{formatDate(dateStr)}</span>;
+}
 
 const statusPOBadge = (status: string) => {
   if (status === "Com PO")    return <span className="flex items-center gap-1 text-xs font-medium text-success"><CheckCircle2 size={13} />{status}</span>;
@@ -31,6 +43,7 @@ const blankForm = {
   projectId: "", pn: "", pnEra: "", projeto: "", description: "", pb: "", fornecedor: "",
   modal: "Nacional" as Modal, statusPO: "Pendente" as StatusPO, po: "", previsaoEmissaoPO: "",
   rda: "", statusRDA: "NA" as StatusRDA, tpo: "", statusTPO: "NA" as StatusTPO, previsaoEmissaoTPO: "",
+  tkoTarget: "", tkoDone: "", otTarget: "", otDone: "", otopTarget: "", otopDone: "",
   comments: "",
 };
 
@@ -72,6 +85,12 @@ function PNForm({ form, setForm }: { form: FormState; setForm: React.Dispatch<Re
       {f("pb", "PB")}
       {f("fornecedor", "Fornecedor")}
       {sel("modal", "Modal", ["IRF", "Direct Buy", "Nacional"])}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">TKO</p>
+      {f("tkoTarget", "TKO - Target (AAAA-MM-DD)")} {f("tkoDone", "TKO - Done (AAAA-MM-DD)")}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OT</p>
+      {f("otTarget", "OT - Target (AAAA-MM-DD)")} {f("otDone", "OT - Done (AAAA-MM-DD)")}
+      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">OTOP</p>
+      {f("otopTarget", "OTOP - Target (AAAA-MM-DD)")} {f("otopDone", "OTOP - Done (AAAA-MM-DD)")}
       <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide pt-1">PO</p>
       {sel("statusPO", "Status PO", ["Com PO", "Pendente", "In Process"])}
       {f("po", "Número da PO")}
@@ -104,6 +123,9 @@ function pnToForm(pn: PartNumber): FormState {
     modal: pn.modal, statusPO: pn.statusPO, po: pn.po, previsaoEmissaoPO: pn.previsaoEmissaoPO,
     rda: pn.rda, statusRDA: pn.statusRDA, tpo: pn.tpo, statusTPO: pn.statusTPO,
     previsaoEmissaoTPO: pn.previsaoEmissaoTPO,
+    tkoTarget: pn.tko.target, tkoDone: pn.tko.done || "",
+    otTarget: pn.ot.target, otDone: pn.ot.done || "",
+    otopTarget: pn.otop.target, otopDone: pn.otop.done || "",
     comments: pn.comments || "",
   };
 }
@@ -120,6 +142,9 @@ function formToPN(form: FormState, id: string, packageId?: string): PartNumber {
     po: form.po, previsaoEmissaoPO: form.previsaoEmissaoPO || "TBD",
     rda: form.rda, statusRDA: form.statusRDA, tpo: form.tpo,
     statusTPO: form.statusTPO, previsaoEmissaoTPO: form.previsaoEmissaoTPO,
+    tko: { target: form.tkoTarget || "TBD", done: form.tkoDone || undefined },
+    ot: { target: form.otTarget || "TBD", done: form.otDone || undefined },
+    otop: { target: form.otopTarget || "TBD", done: form.otopDone || undefined },
     comments: form.comments || "",
   };
 }
@@ -132,17 +157,14 @@ export default function PartNumbersPage() {
   const [filterModal, setFilterModal] = useState("all");
   const [filterStatusPO, setFilterStatusPO] = useState("all");
 
-  // Create
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<FormState>(blankForm);
 
-  // Edit
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<FormState>(blankForm);
   const [editId, setEditId] = useState<string | null>(null);
   const [editPackageId, setEditPackageId] = useState<string | undefined>(undefined);
 
-  // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
@@ -212,6 +234,12 @@ export default function PartNumbersPage() {
     { header: "Fornecedor", accessor: (r) => String((r as unknown as PartNumber).fornecedor) },
     { header: "Modal", accessor: (r) => String((r as unknown as PartNumber).modal) },
     { header: "Pacote", accessor: (r) => getPackageName((r as unknown as PartNumber).packageId) },
+    { header: "TKO Target", accessor: (r) => String((r as unknown as PartNumber).tko.target) },
+    { header: "TKO Done", accessor: (r) => String((r as unknown as PartNumber).tko.done || "") },
+    { header: "OT Target", accessor: (r) => String((r as unknown as PartNumber).ot.target) },
+    { header: "OT Done", accessor: (r) => String((r as unknown as PartNumber).ot.done || "") },
+    { header: "OTOP Target", accessor: (r) => String((r as unknown as PartNumber).otop.target) },
+    { header: "OTOP Done", accessor: (r) => String((r as unknown as PartNumber).otop.done || "") },
     { header: "Status PO", accessor: (r) => String((r as unknown as PartNumber).statusPO) },
     { header: "PO", accessor: (r) => String((r as unknown as PartNumber).po) },
     { header: "Prev. PO", accessor: (r) => String((r as unknown as PartNumber).previsaoEmissaoPO) },
@@ -240,22 +268,19 @@ export default function PartNumbersPage() {
       const rows = await parseImportedFile(file);
       let packagesCreated = 0;
 
-      // Track newly created packages within this import
-      const createdPkgMap = new Map<string, string>(); // sourcePackageNumber -> id
+      const createdPkgMap = new Map<string, string>();
 
       const newPNs: PartNumber[] = rows.map((row, i) => {
         const pacoteName = row["Pacote"] || row["Source Package"] || "";
         let packageId: string | undefined;
 
         if (pacoteName.trim()) {
-          // Check existing packages
           const existing = pkgList.find((p) => p.sourcePackageNumber === pacoteName);
           if (existing) {
             packageId = existing.id;
           } else if (createdPkgMap.has(pacoteName)) {
             packageId = createdPkgMap.get(pacoteName);
           } else {
-            // Create skeleton package
             const newPkgId = `pkg-auto-${Date.now()}-${i}`;
             addPackage({
               id: newPkgId,
@@ -267,7 +292,6 @@ export default function PartNumbersPage() {
               status: "Source Package" as PackageStatus, phaseTargetStatus: "On Track" as PhaseTargetStatus,
               createdDate: new Date().toISOString().slice(0, 10), totalDays: 0,
               recommendationPredictionDate: "TBD",
-              tko: { target: "TBD" }, ot: { target: "TBD" }, otop: { target: "TBD" },
             });
             createdPkgMap.set(pacoteName, newPkgId);
             packageId = newPkgId;
@@ -294,6 +318,9 @@ export default function PartNumbersPage() {
           tpo: row["TPO"] || row["tpo"] || "",
           statusTPO: (row["Status TPO"] || row["statusTPO"] || "NA") as StatusTPO,
           previsaoEmissaoTPO: row["Prev. TPO"] || row["previsaoEmissaoTPO"] || "",
+          tko: { target: row["TKO Target"] || "TBD", done: row["TKO Done"] || undefined },
+          ot: { target: row["OT Target"] || "TBD", done: row["OT Done"] || undefined },
+          otop: { target: row["OTOP Target"] || "TBD", done: row["OTOP Done"] || undefined },
           comments: row["Comentários"] || row["comments"] || "",
         };
       });
@@ -441,7 +468,7 @@ export default function PartNumbersPage() {
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border">
-                  {["PN", "ERA", "Projeto", "Descrição", "PB", "Fornecedor", "Modal", "Pacote", "Status PO", "PO", "Prev. PO", "RDA", "Status RDA", "TPO", "Status TPO", "Prev. TPO", "Comentários"].map((h) => (
+                  {["PN", "ERA", "Projeto", "Descrição", "PB", "Fornecedor", "Modal", "Pacote", "TKO", "OT", "OTOP", "Status PO", "PO", "Prev. PO", "RDA", "Status RDA", "TPO", "Status TPO", "Prev. TPO", "Comentários"].map((h) => (
                     <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -459,6 +486,9 @@ export default function PartNumbersPage() {
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.fornecedor}</td>
                         <td className="p-3"><Badge variant="outline" className="text-[10px]">{pn.modal}</Badge></td>
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{getPackageName(pn.packageId)}</td>
+                        <td className="p-3 whitespace-nowrap"><DateCell field={pn.tko} /></td>
+                        <td className="p-3 whitespace-nowrap"><DateCell field={pn.ot} /></td>
+                        <td className="p-3 whitespace-nowrap"><DateCell field={pn.otop} /></td>
                         <td className="p-3">{statusPOBadge(pn.statusPO)}</td>
                         <td className="p-3 text-muted-foreground">{pn.po || "—"}</td>
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{pn.previsaoEmissaoPO || "—"}</td>
@@ -490,7 +520,7 @@ export default function PartNumbersPage() {
                   </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={17} className="p-8 text-center text-muted-foreground">Nenhum part number encontrado</td></tr>
+                  <tr><td colSpan={20} className="p-8 text-center text-muted-foreground">Nenhum part number encontrado</td></tr>
                 )}
               </tbody>
             </table>
