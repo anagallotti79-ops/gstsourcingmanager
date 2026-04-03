@@ -1,41 +1,29 @@
 
 
-# Página de Perfil + Sistema de Admin
+# Modal de Detalhes ao Clicar nos Gráficos do Dashboard
 
 ## Resumo
-Criar página de perfil para edição de nome, área e senha. Adicionar sistema de roles (admin) com tabela `user_roles` seguindo as melhores práticas de segurança.
+Ao clicar em qualquer segmento/barra dos 5 gráficos do dashboard do projeto, abrir um Dialog (modal) mostrando a lista filtrada dos pacotes ou part numbers correspondentes.
 
 ## Mudanças
 
-### 1. Migration — Tabela `user_roles` + função `has_role`
-- Criar enum `app_role` com valores `admin`, `user`
-- Criar tabela `user_roles` (`user_id`, `role`) com RLS
-- Criar função `has_role()` (SECURITY DEFINER) para verificar roles sem recursão
-- Política: usuários autenticados podem ler suas próprias roles
-- Admins podem ler todas as roles (via `has_role`)
+### 1. Adicionar estado para o modal (`ProjectDetailPage.tsx`)
+- State `modalData`: `{ title: string, type: 'packages' | 'pns', items: Package[] | PartNumber[] } | null`
+- Quando `modalData` não é null, renderizar um `Dialog` com a tabela dos itens filtrados
 
-### 2. Nova página `ProfilePage.tsx` (`/perfil`)
-- Formulário com campos: Nome, Área (pré-preenchidos do perfil atual)
-- Seção separada para alteração de senha (senha atual não necessária via Supabase `updateUser`)
-- Botão salvar que faz `supabase.from('profiles').update(...)` + `supabase.auth.updateUser({ password })`
+### 2. Handlers de clique por gráfico
+- **Gráfico 1 (DM Division)**: `onClick` na `Bar` filtra pacotes por `dmDivision` clicado
+- **Gráfico 2 (Prediction Target)**: `onClick` na `Pie/Cell` filtra pacotes pela faixa de semanas (<=24, 24-26, >26)
+- **Gráfico 3 (Current Phase Target)**: `onClick` na `Bar` empilhada filtra pacotes por `status` (fase) + `phaseTargetStatus` (On Track/At Risk/Late)
+- **Gráfico 4 (Status PO)**: `onClick` na `Pie/Cell` filtra part numbers por `statusPO`
+- **Gráfico 5 (Previsão Mensal)**: `onClick` no ponto/área filtra pacotes pelo mês correspondente da `recommendationPredictionDate`
 
-### 3. Atualizar `AuthContext.tsx`
-- Adicionar campo `isAdmin` ao contexto
-- Buscar role do usuário na tabela `user_roles` após login
-- Expor `isAdmin` para uso nos componentes
-
-### 4. Atualizar navegação
-- Adicionar link "Perfil" no sidebar (`AppSidebar.tsx`) com ícone User
-- Adicionar rota `/perfil` no `App.tsx`
-
-### 5. Painel Admin (visível apenas para admins)
-- Seção na página de perfil ou link no sidebar (apenas se admin)
-- Listar usuários cadastrados e permitir atribuir/remover role admin
+### 3. Componente do Modal
+- Usar `Dialog` do shadcn/ui existente
+- Título dinâmico (ex: "Pacotes - DMCA", "Part Numbers - Com PO")
+- Tabela compacta com as colunas principais (mesmas já usadas nas abas Pacotes/PNs)
+- Botão de fechar
 
 ### Arquivos afetados
-- 1 migration SQL (user_roles + has_role + RLS)
-- `src/pages/ProfilePage.tsx` — novo
-- `src/contexts/AuthContext.tsx` — adicionar isAdmin
-- `src/components/AppSidebar.tsx` — link Perfil
-- `src/App.tsx` — rota /perfil
+- `src/pages/ProjectDetailPage.tsx` — adicionar estado, handlers de clique nos gráficos, e Dialog com tabela filtrada
 
