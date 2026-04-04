@@ -407,7 +407,7 @@ export default function PartNumbersPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <ShoppingCart className="h-5 w-5 text-primary" />
+            <FileText className="h-5 w-5 text-primary" />
             <div><p className="text-xs text-muted-foreground">Total PNs</p><p className="text-xl font-bold text-foreground">{pnList.length}</p></div>
           </CardContent>
         </Card>
