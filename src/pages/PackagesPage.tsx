@@ -578,7 +578,7 @@ export default function PackagesPage() {
                   </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={12} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
+                  <tr><td colSpan={13} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
                 )}
               </tbody>
             </table>
