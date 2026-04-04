@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ShoppingCart, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { Search, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus, FileSpreadsheet, FileText, Upload, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
@@ -407,13 +407,13 @@ export default function PartNumbersPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <ShoppingCart className="h-5 w-5 text-primary" />
+            <FileText className="h-5 w-5 text-primary" />
             <div><p className="text-xs text-muted-foreground">Total PNs</p><p className="text-xl font-bold text-foreground">{pnList.length}</p></div>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <ShoppingCart className="h-5 w-5 text-success" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
             <div><p className="text-xs text-muted-foreground">Com PO</p><p className="text-xl font-bold text-success">{totalComPO}</p></div>
           </CardContent>
         </Card>
@@ -425,7 +425,7 @@ export default function PartNumbersPage() {
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <Loader2 className="h-5 w-5 text-info" />
+            <RefreshCw className="h-5 w-5 text-info" />
             <div><p className="text-xs text-muted-foreground">In Process</p><p className="text-xl font-bold text-info">{totalInProcess}</p></div>
           </CardContent>
         </Card>
