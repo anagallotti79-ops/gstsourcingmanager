@@ -4,7 +4,7 @@ import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { LayoutDashboard, Package, Hash, TrendingUp } from "lucide-react";
+import { FolderOpen, Box, FileText, TrendingUp } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   "Em Andamento": "bg-info text-info-foreground",
