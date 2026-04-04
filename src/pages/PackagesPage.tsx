@@ -202,6 +202,20 @@ export default function PackagesPage() {
     });
   }, [pkgList, search, filterDM, filterStatus, filterProject, filterCategory]);
 
+  const predictionStatusBadge = (pkg: Package) => {
+    const weeks = calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate);
+    if (weeks <= 24) return <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30">Achieving Target</Badge>;
+    if (weeks <= 26) return <Badge className="text-[10px] bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30">Approaching Target</Badge>;
+    return <Badge className="text-[10px] bg-rose-500/20 text-rose-400 border-rose-500/30 hover:bg-rose-500/30">Over Target</Badge>;
+  };
+
+  const predictionStatusText = (pkg: Package) => {
+    const weeks = calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate);
+    if (weeks <= 24) return "Achieving Target";
+    if (weeks <= 26) return "Approaching Target";
+    return "Over Target";
+  };
+
   const targetBadge = (status: string) => {
     if (status === "On Track") return <span className="flex items-center gap-1 text-xs font-medium text-success"><CheckCircle2 size={13} />On Track</span>;
     if (status === "At Risk")  return <span className="flex items-center gap-1 text-xs font-medium text-warning"><AlertTriangle size={13} />At Risk</span>;
