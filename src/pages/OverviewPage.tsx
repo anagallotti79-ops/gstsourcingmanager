@@ -21,9 +21,9 @@ export default function OverviewPage() {
   const avgProgress = Math.round(projects.reduce((s, p) => s + p.progress, 0) / projects.length);
 
   const kpis = [
-    { label: "Total Projetos", value: projects.length, icon: LayoutDashboard, color: "text-primary" },
-    { label: "Pacotes GST", value: totalPackages, icon: Package, color: "text-info" },
-    { label: "Part Numbers", value: totalPNs, icon: Hash, color: "text-warning" },
+    { label: "Total Projetos", value: projects.length, icon: FolderOpen, color: "text-primary" },
+    { label: "Pacotes GST", value: totalPackages, icon: Box, color: "text-info" },
+    { label: "Part Numbers", value: totalPNs, icon: FileText, color: "text-warning" },
     { label: "Progresso Médio", value: `${avgProgress}%`, icon: TrendingUp, color: "text-success" },
   ];
 

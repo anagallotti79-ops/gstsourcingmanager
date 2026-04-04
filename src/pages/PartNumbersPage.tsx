@@ -425,7 +425,7 @@ export default function PartNumbersPage() {
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <Loader2 className="h-5 w-5 text-info" />
+            <RefreshCw className="h-5 w-5 text-info" />
             <div><p className="text-xs text-muted-foreground">In Process</p><p className="text-xl font-bold text-info">{totalInProcess}</p></div>
           </CardContent>
         </Card>
