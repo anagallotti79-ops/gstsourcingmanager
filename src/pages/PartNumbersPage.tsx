@@ -413,7 +413,7 @@ export default function PartNumbersPage() {
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <ShoppingCart className="h-5 w-5 text-success" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
             <div><p className="text-xs text-muted-foreground">Com PO</p><p className="text-xl font-bold text-success">{totalComPO}</p></div>
           </CardContent>
         </Card>
