@@ -552,6 +552,7 @@ export default function PackagesPage() {
                         <td className="p-3"><Badge variant="secondary" className="text-[10px]">{pkg.status}</Badge></td>
                         <td className="p-3">{targetBadge(pkg.phaseTargetStatus)}</td>
                         <td className="p-3 text-muted-foreground">{calculateWeeks(pkg.totalDays)}</td>
+                        <td className="p-3">{predictionStatusBadge(pkg)}</td>
                         <td className="p-3 text-muted-foreground">{calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate)}</td>
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{formatDate(pkg.recommendationPredictionDate)}</td>
                         <td className="p-3 text-muted-foreground max-w-[160px]">
