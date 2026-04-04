@@ -202,6 +202,20 @@ export default function PackagesPage() {
     });
   }, [pkgList, search, filterDM, filterStatus, filterProject, filterCategory]);
 
+  const predictionStatusBadge = (pkg: Package) => {
+    const weeks = calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate);
+    if (weeks <= 24) return <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30">Achieving Target</Badge>;
+    if (weeks <= 26) return <Badge className="text-[10px] bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30">Approaching Target</Badge>;
+    return <Badge className="text-[10px] bg-rose-500/20 text-rose-400 border-rose-500/30 hover:bg-rose-500/30">Over Target</Badge>;
+  };
+
+  const predictionStatusText = (pkg: Package) => {
+    const weeks = calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate);
+    if (weeks <= 24) return "Achieving Target";
+    if (weeks <= 26) return "Approaching Target";
+    return "Over Target";
+  };
+
   const targetBadge = (status: string) => {
     if (status === "On Track") return <span className="flex items-center gap-1 text-xs font-medium text-success"><CheckCircle2 size={13} />On Track</span>;
     if (status === "At Risk")  return <span className="flex items-center gap-1 text-xs font-medium text-warning"><AlertTriangle size={13} />At Risk</span>;
@@ -302,6 +316,7 @@ export default function PackagesPage() {
     { header: "Status", accessor: (r) => String((r as unknown as Package).status) },
     { header: "Target Status", accessor: (r) => String((r as unknown as Package).phaseTargetStatus) },
     { header: "Total Dias", accessor: (r) => String((r as unknown as Package).totalDays) },
+    { header: "Status Previsão", accessor: (r) => predictionStatusText(r as unknown as Package) },
     { header: "Data Previsão", accessor: (r) => String((r as unknown as Package).recommendationPredictionDate) },
     { header: "Comentários", accessor: (r) => String((r as unknown as Package).comments || "") },
     { header: "PN", accessor: (r) => String((r as Record<string, unknown>)._pn || "") },
@@ -519,7 +534,7 @@ export default function PackagesPage() {
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-card z-10">
                 <tr className="border-b border-border">
-                  {["Source Package", "Descrição", "PPM", "PB", "DM Div.", "Cat.", "Status", "Target Status", "Sem. Total", "Sem. Previsão", "Data Previsão", "Comentários"].map((h) => (
+                  {["Source Package", "Descrição", "PPM", "PB", "DM Div.", "Cat.", "Status", "Target Status", "Sem. Total", "Status Previsão", "Sem. Previsão", "Data Previsão", "Comentários"].map((h) => (
                     <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -538,6 +553,7 @@ export default function PackagesPage() {
                         <td className="p-3"><Badge variant="secondary" className="text-[10px]">{pkg.status}</Badge></td>
                         <td className="p-3">{targetBadge(pkg.phaseTargetStatus)}</td>
                         <td className="p-3 text-muted-foreground">{calculateWeeks(pkg.totalDays)}</td>
+                        <td className="p-3">{predictionStatusBadge(pkg)}</td>
                         <td className="p-3 text-muted-foreground">{calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate)}</td>
                         <td className="p-3 text-muted-foreground whitespace-nowrap">{formatDate(pkg.recommendationPredictionDate)}</td>
                         <td className="p-3 text-muted-foreground max-w-[160px]">
@@ -563,7 +579,7 @@ export default function PackagesPage() {
                   </ContextMenu>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={12} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
+                  <tr><td colSpan={13} className="p-8 text-center text-muted-foreground">Nenhum pacote encontrado</td></tr>
                 )}
               </tbody>
             </table>
