@@ -316,6 +316,7 @@ export default function PackagesPage() {
     { header: "Status", accessor: (r) => String((r as unknown as Package).status) },
     { header: "Target Status", accessor: (r) => String((r as unknown as Package).phaseTargetStatus) },
     { header: "Total Dias", accessor: (r) => String((r as unknown as Package).totalDays) },
+    { header: "Status Previsão", accessor: (r) => predictionStatusText(r as unknown as Package) },
     { header: "Data Previsão", accessor: (r) => String((r as unknown as Package).recommendationPredictionDate) },
     { header: "Comentários", accessor: (r) => String((r as unknown as Package).comments || "") },
     { header: "PN", accessor: (r) => String((r as Record<string, unknown>)._pn || "") },
