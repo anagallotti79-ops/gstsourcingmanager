@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, ShoppingCart, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { Search, Clock, Loader2, Plus, CheckCircle2, AlertTriangle, Minus, FileSpreadsheet, FileText, Upload, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
