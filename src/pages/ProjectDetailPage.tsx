@@ -94,16 +94,17 @@ export default function ProjectDetailPage() {
   projPackages.forEach((pkg) => {
     const date = pkg.recommendationPredictionDate;
     if (!date || date === "TBD") return;
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const parts = date.split("-");
+    if (parts.length < 2) return;
+    const key = `${parts[0]}-${parts[1]}`;
     monthMap[key] = (monthMap[key] || 0) + 1;
   });
   const monthlyLabelToKey: Record<string, string> = {};
   const monthlyData = Object.entries(monthMap)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, count]) => {
-      const label = new Date(month + "-01").toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+      const [y, m] = month.split("-");
+      const label = new Date(Number(y), Number(m) - 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
       monthlyLabelToKey[label] = month;
       return { month: label, pacotes: count };
     });
@@ -166,9 +167,9 @@ export default function ProjectDetailPage() {
     const items = projPackages.filter((pkg) => {
       const date = pkg.recommendationPredictionDate;
       if (!date || date === "TBD") return false;
-      const d = new Date(date);
-      if (isNaN(d.getTime())) return false;
-      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const parts = date.split("-");
+      if (parts.length < 2) return false;
+      const k = `${parts[0]}-${parts[1]}`;
       return k === key;
     });
     if (items.length) setModalData({ title: `Pacotes - ${label}`, type: "packages", items });
