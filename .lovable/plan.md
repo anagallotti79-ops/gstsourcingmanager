@@ -1,23 +1,32 @@
 
 
-# Coluna "Status Previsão" na Tabela de Pacotes
+# Correção do Gráfico "Previsão de Fechamento por Mês"
 
-## Resumo
-Adicionar coluna calculada "Status Previsão" entre "Sem. Total" e "Sem. Previsão" na tabela de Pacotes, com badges coloridas baseadas nas semanas de previsão:
-- **Achieving Target** (verde) — previsão ≤ 24 semanas
-- **Approaching Target** (amarelo) — entre 24 e 26 semanas
-- **Over Target** (vermelho) — acima de 26 semanas
+## Problema
+Datas no primeiro dia do mês (ex: `2025-03-01`, `2025-06-01`) são interpretadas como UTC pelo JavaScript. Em fusos horários negativos como o Brasil (UTC-3), `new Date("2025-03-01")` vira 28/fev às 21h, fazendo o `getMonth()` retornar o mês anterior. Isso causa pacotes aparecendo no mês errado no gráfico.
 
-## Mudanças
+**Pacotes afetados**: pkg-2 (jun→mai), pkg-3 (mar→fev), pkg-4 (mai→abr), pkg-6 (ago→jul), pkg-7 (dez→nov) — todos com `recommendationPredictionDate` no dia 01.
 
-### `src/pages/PackagesPage.tsx`
-1. Adicionar header "Status Previsão" no array de colunas, entre "Sem. Total" e "Sem. Previsão"
-2. Criar função helper `predictionStatusBadge(pkg)` que calcula `calculatePredictionWeeks` e retorna badge com cor e texto adequados
-3. Inserir `<td>` com o badge na linha da tabela, na posição correspondente
-4. Incluir a coluna na exportação Excel/PDF
+## Solução
 
-### Detalhes técnicos
-- Reutiliza `calculatePredictionWeeks` já importado
-- Mesma lógica de faixas usada no gráfico Prediction Target do dashboard (≤24 / 24–26 / >26)
-- Cores: verde `#10B981`, amarelo `#F59E0B`, vermelho `#E11D48` — consistentes com o gráfico
+### `src/pages/ProjectDetailPage.tsx`
+Alterar o parsing da data no bloco do Dashboard 5 (linha ~97) para usar split manual em vez de `new Date()`, evitando o problema de timezone:
+
+```typescript
+const [year, mon] = date.split("-");
+const key = `${year}-${mon}`;
+```
+
+Mesma correção no label (linha ~106):
+```typescript
+const [y, m] = month.split("-");
+const label = new Date(Number(y), Number(m) - 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+```
+
+E na função de click do gráfico mensal, onde filtra pacotes por mês (se houver parsing similar).
+
+### Escopo
+- Apenas o arquivo `ProjectDetailPage.tsx` será alterado
+- Dados mock permanecem inalterados
+- Datas passadas continuarão aparecendo normalmente (pacotes já fechados)
 
