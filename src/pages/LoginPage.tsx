@@ -1,4 +1,5 @@
 import { useState } from "react";
+import nexusLogo from "@/assets/Nexus.png";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-border">
         <CardHeader className="text-center space-y-2">
+          <img src={nexusLogo} alt="NEXUS" className="h-16 w-auto mx-auto mb-2" />
           <CardTitle className="text-2xl font-bold text-foreground">
             NEXUS
           </CardTitle>
