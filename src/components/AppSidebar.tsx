@@ -1,4 +1,5 @@
 import { LayoutDashboard, Package, Hash, Ban, User } from "lucide-react";
+import nexusLogo from "@/assets/Nexus.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -31,18 +32,14 @@ export function AppSidebar() {
       <SidebarHeader className="p-4 border-b border-border">
         {!collapsed ? (
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">G</span>
-            </div>
+            <img src={nexusLogo} alt="NEXUS" className="h-8 w-8 rounded-lg object-contain" />
             <div>
-              <h2 className="text-sm font-semibold text-foreground">GST Sourcing</h2>
-              <p className="text-xs text-muted-foreground">Manager</p>
+              <h2 className="text-sm font-semibold text-foreground">NEXUS</h2>
+              <p className="text-xs text-muted-foreground">Sourcing Control</p>
             </div>
           </div>
         ) : (
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
-            <span className="text-primary-foreground font-bold text-sm">G</span>
-          </div>
+          <img src={nexusLogo} alt="NEXUS" className="h-8 w-8 rounded-lg object-contain mx-auto" />
         )}
       </SidebarHeader>
       <SidebarContent>

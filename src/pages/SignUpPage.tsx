@@ -37,7 +37,7 @@ export default function SignUpPage() {
             Criar Conta
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Preencha os dados para acessar o GST Sourcing Manager
+            Preencha os dados para acessar o NEXUS
           </CardDescription>
         </CardHeader>
         <CardContent>
