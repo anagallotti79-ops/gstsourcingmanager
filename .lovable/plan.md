@@ -1,32 +1,35 @@
 
 
-# Correção do Gráfico "Previsão de Fechamento por Mês"
+# Duas alterações: Dados do Alpha SUV + Renomear sistema para NEXUS
 
-## Problema
-Datas no primeiro dia do mês (ex: `2025-03-01`, `2025-06-01`) são interpretadas como UTC pelo JavaScript. Em fusos horários negativos como o Brasil (UTC-3), `new Date("2025-03-01")` vira 28/fev às 21h, fazendo o `getMonth()` retornar o mês anterior. Isso causa pacotes aparecendo no mês errado no gráfico.
+## 1. Corrigir datas do Alpha SUV (`src/data/mockData.ts`)
 
-**Pacotes afetados**: pkg-2 (jun→mai), pkg-3 (mar→fev), pkg-4 (mai→abr), pkg-6 (ago→jul), pkg-7 (dez→nov) — todos com `recommendationPredictionDate` no dia 01.
+O usuário quer a distribuição: **Feb(1), Apr(1), May(1), Jun(1), Jul(2)** — sem nenhum em Mar.
 
-## Solução
+Datas atuais vs. novas para os 6 pacotes do proj-1:
 
-### `src/pages/ProjectDetailPage.tsx`
-Alterar o parsing da data no bloco do Dashboard 5 (linha ~97) para usar split manual em vez de `new Date()`, evitando o problema de timezone:
+| Pacote | Atual | Novo |
+|--------|-------|------|
+| pkg-1 (Chassi) | 2025-07-15 (Jul) | 2025-07-15 (Jul) ✓ |
+| pkg-2 (Motor) | 2025-06-01 (Jun) | 2025-06-15 (Jun) |
+| pkg-3 (Freios/Closed) | 2025-03-01 (Mar) | 2025-02-15 (Feb) |
+| pkg-4 (Painel) | 2025-05-01 (May) | 2025-05-15 (May) |
+| pkg-5 (Suspensão) | 2025-06-20 (Jun→Jul) | 2025-07-20 (Jul) |
+| pkg-6 (Arrefecimento) | 2025-08-01 (Aug) | 2025-04-15 (Apr) |
 
-```typescript
-const [year, mon] = date.split("-");
-const key = `${year}-${mon}`;
-```
+Resultado: Feb(1), Apr(1), May(1), Jun(1), Jul(2) — exatamente como pedido.
 
-Mesma correção no label (linha ~106):
-```typescript
-const [y, m] = month.split("-");
-const label = new Date(Number(y), Number(m) - 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
-```
+## 2. Renomear sistema para "NEXUS" (`6 arquivos`)
 
-E na função de click do gráfico mensal, onde filtra pacotes por mês (se houver parsing similar).
+Substituir todas as referências "GST Sourcing Manager" / "GST Sourcing" por "NEXUS" com o subtítulo "Integrated Sourcing Control Platform".
 
-### Escopo
-- Apenas o arquivo `ProjectDetailPage.tsx` será alterado
-- Dados mock permanecem inalterados
-- Datas passadas continuarão aparecendo normalmente (pacotes já fechados)
+Além disso, copiar o logo enviado (`Nexus.png`) para `src/assets/` e usá-lo na sidebar e na tela de login.
+
+**Arquivos afetados:**
+- `src/components/AppSidebar.tsx` — nome + logo
+- `src/components/AppLayout.tsx` — header
+- `src/pages/LoginPage.tsx` — título
+- `src/pages/SignUpPage.tsx` — descrição
+- `src/pages/Index.tsx` — título
+- `index.html` — título da aba e meta tags
 
