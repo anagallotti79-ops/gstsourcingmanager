@@ -31,10 +31,10 @@ export default function LoginPage() {
       <Card className="w-full max-w-md border-border">
         <CardHeader className="text-center space-y-2">
           <CardTitle className="text-2xl font-bold text-foreground">
-            GST Sourcing Manager
+            NEXUS
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Entre com suas credenciais para acessar o sistema
+            Integrated Sourcing Control Platform
           </CardDescription>
         </CardHeader>
         <CardContent>

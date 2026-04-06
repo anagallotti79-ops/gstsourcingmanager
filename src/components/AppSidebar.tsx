@@ -35,8 +35,8 @@ export function AppSidebar() {
               <span className="text-primary-foreground font-bold text-sm">G</span>
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">GST Sourcing</h2>
-              <p className="text-xs text-muted-foreground">Manager</p>
+              <h2 className="text-sm font-semibold text-foreground">NEXUS</h2>
+              <p className="text-xs text-muted-foreground">Sourcing Control</p>
             </div>
           </div>
         ) : (
