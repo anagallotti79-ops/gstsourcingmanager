@@ -378,7 +378,7 @@ export default function ProjectDetailPage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border">
-                      {["Pacote", "Descrição", "DM", "Cat.", "Status", "Target"].map((h) => (
+                      {["Pacote", "Descrição", "DM", "Cat.", "Status", "Target", "Prev. Semanas"].map((h) => (
                         <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -400,9 +400,10 @@ export default function ProjectDetailPage() {
                             {pkg.phaseTargetStatus === "On Track" && <CheckCircle2 className="h-3.5 w-3.5" />}
                             {pkg.phaseTargetStatus === "At Risk" && <AlertTriangle className="h-3.5 w-3.5" />}
                             {pkg.phaseTargetStatus === "Late" && <XCircle className="h-3.5 w-3.5" />}
-                            {pkg.phaseTargetStatus}
-                          </span>
-                        </td>
+                          {pkg.phaseTargetStatus}
+                        </span>
+                      </td>
+                      <td className="p-3 text-muted-foreground">{calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -466,7 +467,7 @@ export default function ProjectDetailPage() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-border">
-                    {["Pacote", "Descrição", "DM", "Cat.", "Status", "Target"].map((h) => (
+                    {["Pacote", "Descrição", "DM", "Cat.", "Status", "Target", "Prev. Semanas"].map((h) => (
                       <th key={h} className="p-3 text-left text-muted-foreground font-medium whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -491,6 +492,7 @@ export default function ProjectDetailPage() {
                           {pkg.phaseTargetStatus}
                         </span>
                       </td>
+                      <td className="p-3 text-muted-foreground">{calculatePredictionWeeks(pkg.createdDate, pkg.recommendationPredictionDate)}</td>
                     </tr>
                   ))}
                 </tbody>
