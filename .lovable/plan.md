@@ -1,21 +1,30 @@
-# Exportar projeto como arquivo ZIP
-
 ## Objetivo
-Gerar um arquivo `.zip` do projeto NEXUS para download, com os arquivos de código fonte e sem dados sensíveis ou dependências instaladas.
+Remover toda a camada de autenticação do app. O NEXUS ficará totalmente aberto — qualquer pessoa acessa direto o dashboard, sem login/cadastro/recuperação de senha.
 
-## O que será incluído
-- Toda a estrutura de código do projeto (`src/`, `supabase/`, `index.html`, `package.json`, `tsconfig.json`, `tailwind.config.ts`, `vite.config.ts`, etc.)
-- Assets e componentes criados (logo `Nexus.png`, tema, páginas, etc.)
+## Mudanças no frontend
 
-## O que será excluído
-- `node_modules/` (pode ser reinstalado com `bun install`)
-- `.env` (contém credenciais/URLs do backend)
-- Arquivos de build/cache (`.git/`, `dist/`, `.lovable/`, etc.)
+**Rotas (`src/App.tsx`)**
+- Remover `AuthProvider`, `ProtectedRoute`, `LoginPage`, `SignUpPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `ProfilePage`.
+- Deixar `AppLayout` envolvendo diretamente as rotas: `/`, `/projeto/:id`, `/pacotes`, `/part-numbers`, `/cancelados`.
 
-## Entrega
-- O arquivo será salvo em `/mnt/documents/nexus-project.zip`
-- Você poderá fazer o download diretamente pelo painel de artefatos
+**Layout (`src/components/AppLayout.tsx`)**
+- Remover uso de `useAuth`, do nome do perfil e do botão "Sair" no topo.
 
-## Pós-entrega
-- Confirmar que o zip foi gerado com sucesso
-- Informar o comando para reinstalar dependências localmente (`bun install`)
+**Sidebar (`src/components/AppSidebar.tsx`)**
+- Remover o item de menu "Perfil".
+
+**Arquivos deletados**
+- `src/contexts/AuthContext.tsx`
+- `src/components/ProtectedRoute.tsx`
+- `src/pages/LoginPage.tsx`
+- `src/pages/SignUpPage.tsx`
+- `src/pages/ForgotPasswordPage.tsx`
+- `src/pages/ResetPasswordPage.tsx`
+- `src/pages/ProfilePage.tsx`
+
+## Backend (Lovable Cloud)
+- Não vou apagar tabelas nem usuários existentes para não perder dados. A tabela `profiles`, `user_roles` e as funções `has_role`/`handle_new_user` continuam no backend, apenas deixam de ser usadas pelo app.
+- Se quiser depois fazer a limpeza completa (drop das tabelas e usuários), me avise em uma etapa separada.
+
+## O que NÃO muda
+- Dashboard, pacotes, part numbers, cancelados, importação/exportação, previsões — tudo continua funcionando igual, só sem exigir login.
